@@ -1,6 +1,7 @@
 interface PlayerPanelProps {
   name: string
   money: number
+  position: number
   color: string
   isActive: boolean
 }
@@ -8,6 +9,7 @@ interface PlayerPanelProps {
 export function PlayerPanel({
   name,
   money,
+  position,
   color,
   isActive,
 }: PlayerPanelProps) {
@@ -25,6 +27,7 @@ export function PlayerPanel({
 
       <h2>{name}</h2>
       <p>金币：{money}</p>
+      <p>位置：第 {position} 格</p>
     </article>
   )
 }
