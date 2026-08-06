@@ -4,6 +4,8 @@ import { boardTiles } from './game/board'
 import {
   createInitialGameState,
   gameReducer,
+  getUpgradeCost,
+  PROPERTY_PRICE,
 } from './game/gameReducer'
 import './App.css'
 
@@ -44,6 +46,23 @@ function App() {
     return null
   }
 
+  const currentProperty = gameState.properties.find(
+    (property) =>
+      property.tileIndex === currentPlayer.position,
+  )
+
+  const decisionCost =
+    gameState.decision === 'buy'
+      ? PROPERTY_PRICE
+      : getUpgradeCost(currentProperty?.level ?? 0)
+
+  const canAfford =
+    currentPlayer.money >= decisionCost
+
+  const winner = gameState.players.find(
+    (player) => player.id === gameState.winnerId,
+  )
+
   function startGame() {
     dispatch({ type: 'RESET' })
     setGameStarted(true)
@@ -56,6 +75,7 @@ function App() {
 
   function rollDice() {
     const value = Math.floor(Math.random() * 6) + 1
+
     dispatch({
       type: 'ROLL',
       value,
@@ -73,69 +93,164 @@ function App() {
             money={playerOne.money}
             position={playerOne.position}
             color={playerOne.color}
-            isActive={gameState.currentPlayerId === 0}
+            isActive={
+              gameState.phase !== 'gameOver' &&
+              gameState.currentPlayerId === 0
+            }
           />
 
           <section className="board" aria-label="大富翁棋盘">
-            {boardTiles.map((tile) => (
-              <div
-                className={`tile tile--${tile.kind}`}
-                key={tile.index}
-                style={{
-                  gridColumn: tile.column,
-                  gridRow: tile.row,
-                }}
-                title={`第 ${tile.index} 格`}
-              >
-                {tile.label}
+            {boardTiles.map((tile) => {
+              const property = gameState.properties.find(
+                (item) => item.tileIndex === tile.index,
+              )
 
-                <div className="pieces">
-                  {gameState.players
-                    .filter(
-                      (player) =>
-                        !player.bankrupt &&
-                        player.position === tile.index,
-                    )
-                    .map((player) => (
-                      <span
-                        className="piece"
-                        key={player.id}
-                        style={{
-                          backgroundColor: player.color,
-                        }}
-                        role="img"
-                        aria-label={`${player.name}的棋子`}
-                      />
-                    ))}
+              const owner = gameState.players.find(
+                (player) =>
+                  player.id === property?.ownerId,
+              )
+
+              const label =
+                property && property.level > 0
+                  ? `${tile.label} L${property.level}`
+                  : tile.label
+
+              return (
+                <div
+                  className={`tile tile--${tile.kind}`}
+                  key={tile.index}
+                  style={{
+                    gridColumn: tile.column,
+                    gridRow: tile.row,
+                    boxShadow: owner
+                      ? `inset 0 -6px ${owner.color}`
+                      : undefined,
+                  }}
+                  title={`第 ${tile.index} 格`}
+                >
+                  {label}
+
+                  <div className="pieces">
+                    {gameState.players
+                      .filter(
+                        (player) =>
+                          !player.bankrupt &&
+                          player.position === tile.index,
+                      )
+                      .map((player) => (
+                        <span
+                          className="piece"
+                          key={player.id}
+                          style={{
+                            backgroundColor: player.color,
+                          }}
+                          role="img"
+                          aria-label={`${player.name}的棋子`}
+                        />
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             <div className="game-controls" aria-live="polite">
-              <p>当前回合</p>
-              <strong>{currentPlayer.name}</strong>
+              <p>
+                {gameState.phase === 'gameOver'
+                  ? '游戏结束'
+                  : '当前回合'}
+              </p>
 
-              <div className="dice">
-                {gameState.diceValue ?? '?'}
-              </div>
+              <strong>
+                {winner
+                  ? `${winner.name} 获胜`
+                  : currentPlayer.name}
+              </strong>
 
-              <button
-                type="button"
-                onClick={rollDice}
-                disabled={gameState.phase !== 'waitingForRoll'}
-              >
-                {gameState.phase === 'moving'
-                  ? '移动中…'
-                  : '掷骰子'}
-              </button>
+              {(gameState.phase === 'waitingForRoll' ||
+                gameState.phase === 'moving') && (
+                <div className="dice">
+                  {gameState.diceValue ?? '?'}
+                </div>
+              )}
 
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => dispatch({ type: 'RESET' })}
-              >
-                重新开始
-              </button>
+              {gameState.phase === 'waitingForRoll' && (
+                <button type="button" onClick={rollDice}>
+                  掷骰子
+                </button>
+              )}
+
+              {gameState.phase === 'moving' && (
+                <button type="button" disabled>
+                  移动中…
+                </button>
+              )}
+
+              {gameState.phase === 'awaitingDecision' && (
+                <>
+                  {gameState.decision === 'buy' && (
+                    <button
+                      type="button"
+                      disabled={!canAfford}
+                      onClick={() =>
+                        dispatch({
+                          type: 'BUY_PROPERTY',
+                        })
+                      }
+                    >
+                      购买（{PROPERTY_PRICE}）
+                    </button>
+                  )}
+
+                  {gameState.decision === 'upgrade' && (
+                    <button
+                      type="button"
+                      disabled={!canAfford}
+                      onClick={() =>
+                        dispatch({
+                          type: 'UPGRADE_PROPERTY',
+                        })
+                      }
+                    >
+                      升级（{decisionCost}）
+                    </button>
+                  )}
+
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() =>
+                      dispatch({
+                        type: 'SKIP_PROPERTY',
+                      })
+                    }
+                  >
+                    跳过
+                  </button>
+                </>
+              )}
+
+              {gameState.phase === 'gameOver' && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    dispatch({ type: 'RESET' })
+                  }
+                >
+                  再来一局
+                </button>
+              )}
+
+              {gameState.phase !== 'gameOver' && (
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() =>
+                    dispatch({ type: 'RESET' })
+                  }
+                >
+                  重新开始
+                </button>
+              )}
 
               <p>{gameState.log[0]}</p>
             </div>
@@ -146,7 +261,10 @@ function App() {
             money={playerTwo.money}
             position={playerTwo.position}
             color={playerTwo.color}
-            isActive={gameState.currentPlayerId === 1}
+            isActive={
+              gameState.phase !== 'gameOver' &&
+              gameState.currentPlayerId === 1
+            }
           />
         </div>
 
