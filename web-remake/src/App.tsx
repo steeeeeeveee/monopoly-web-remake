@@ -1,4 +1,9 @@
-import { useEffect, useReducer, useState } from 'react'
+import {
+  useEffect,
+  useReducer,
+  useRef,
+  useState,
+} from 'react'
 import { PlayerPanel } from './components/PlayerPanel'
 import { boardTiles } from './game/board'
 import {
@@ -15,6 +20,14 @@ function App() {
     gameReducer,
     createInitialGameState(),
   )
+  const rollButtonRef =
+    useRef<HTMLButtonElement>(null)
+  const decisionButtonRef =
+    useRef<HTMLButtonElement>(null)
+  const skipButtonRef =
+    useRef<HTMLButtonElement>(null)
+  const restartButtonRef =
+    useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (
@@ -35,6 +48,91 @@ function App() {
     gameStarted,
     gameState.phase,
     gameState.movementQueue,
+  ])
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const isUsingControl =
+        event.target instanceof HTMLButtonElement ||
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        event.target instanceof HTMLSelectElement
+
+      if (
+        !gameStarted ||
+        event.repeat ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.metaKey ||
+        isUsingControl
+      ) {
+        return
+      }
+
+      if (
+        event.code === 'KeyR' &&
+        gameState.phase === 'waitingForRoll'
+      ) {
+        event.preventDefault()
+
+        dispatch({
+          type: 'ROLL',
+          value: Math.floor(Math.random() * 6) + 1,
+        })
+      }
+
+      if (
+        event.key === 'Escape' &&
+        gameState.phase === 'awaitingDecision'
+      ) {
+        event.preventDefault()
+
+        dispatch({
+          type: 'SKIP_PROPERTY',
+        })
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      window.removeEventListener(
+        'keydown',
+        handleKeyDown,
+      )
+    }
+  }, [gameStarted, gameState.phase])
+
+  useEffect(() => {
+    if (!gameStarted) {
+      return
+    }
+
+    if (gameState.phase === 'waitingForRoll') {
+      rollButtonRef.current?.focus()
+      return
+    }
+
+    if (gameState.phase === 'awaitingDecision') {
+      const decisionButton =
+        decisionButtonRef.current
+
+      if (decisionButton && !decisionButton.disabled) {
+        decisionButton.focus()
+      } else {
+        skipButtonRef.current?.focus()
+      }
+
+      return
+    }
+
+    if (gameState.phase === 'gameOver') {
+      restartButtonRef.current?.focus()
+    }
+  }, [
+    gameStarted,
+    gameState.phase,
+    gameState.currentPlayerId,
   ])
 
   const playerOne = gameState.players[0]
@@ -58,6 +156,12 @@ function App() {
 
   const canAfford =
     currentPlayer.money >= decisionCost
+
+  const missingMoney =
+    gameState.phase === 'awaitingDecision' &&
+    !canAfford
+      ? decisionCost - currentPlayer.money
+      : 0
 
   const winner = gameState.players.find(
     (player) => player.id === gameState.winnerId,
@@ -153,7 +257,12 @@ function App() {
               )
             })}
 
-            <div className="game-controls" aria-live="polite">
+            <div
+              className="game-controls"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               <p>
                 {gameState.phase === 'gameOver'
                   ? '游戏结束'
@@ -166,15 +275,32 @@ function App() {
                   : currentPlayer.name}
               </strong>
 
+              <p className="keyboard-help">
+                {gameState.phase === 'waitingForRoll'
+                  ? '键盘：按 R 掷骰子'
+                  : gameState.phase === 'awaitingDecision'
+                    ? '键盘：按 Esc 跳过'
+                    : '可以使用 Tab 和 Enter 操作按钮'}
+              </p>
+
               {(gameState.phase === 'waitingForRoll' ||
                 gameState.phase === 'moving') && (
-                <div className="dice">
+                <div
+                  className="dice"
+                  aria-label={`骰子点数 ${
+                    gameState.diceValue ?? '尚未投掷'
+                  }`}
+                >
                   {gameState.diceValue ?? '?'}
                 </div>
               )}
 
               {gameState.phase === 'waitingForRoll' && (
-                <button type="button" onClick={rollDice}>
+                <button
+                  ref={rollButtonRef}
+                  type="button"
+                  onClick={rollDice}
+                >
                   掷骰子
                 </button>
               )}
@@ -187,9 +313,25 @@ function App() {
 
               {gameState.phase === 'awaitingDecision' && (
                 <>
+                  {missingMoney > 0 && (
+                    <p
+                      id="decision-error"
+                      className="error-message"
+                      role="alert"
+                    >
+                      金币不足，还差 {missingMoney}
+                    </p>
+                  )}
+
                   {gameState.decision === 'buy' && (
                     <button
+                      ref={decisionButtonRef}
                       type="button"
+                      aria-describedby={
+                        !canAfford
+                          ? 'decision-error'
+                          : undefined
+                      }
                       disabled={!canAfford}
                       onClick={() =>
                         dispatch({
@@ -203,7 +345,13 @@ function App() {
 
                   {gameState.decision === 'upgrade' && (
                     <button
+                      ref={decisionButtonRef}
                       type="button"
+                      aria-describedby={
+                        !canAfford
+                          ? 'decision-error'
+                          : undefined
+                      }
                       disabled={!canAfford}
                       onClick={() =>
                         dispatch({
@@ -216,6 +364,7 @@ function App() {
                   )}
 
                   <button
+                    ref={skipButtonRef}
                     className="secondary-button"
                     type="button"
                     onClick={() =>
@@ -231,6 +380,7 @@ function App() {
 
               {gameState.phase === 'gameOver' && (
                 <button
+                  ref={restartButtonRef}
                   type="button"
                   onClick={() =>
                     dispatch({ type: 'RESET' })

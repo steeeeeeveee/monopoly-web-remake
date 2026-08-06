@@ -370,3 +370,21 @@ button:disabled {
     color: white;
   }
 }
+
+.keyboard-help {
+  min-height: 14px;
+  color: #fff7df !important;
+  font-size: 10px !important;
+}
+
+@media (max-width: 900px) {
+  .keyboard-help {
+    display: none;
+  }
+}
+
+.error-message {
+  color: #ffb3b3 !important;
+  font-weight: 700;
+  line-height: 1.2;
+}

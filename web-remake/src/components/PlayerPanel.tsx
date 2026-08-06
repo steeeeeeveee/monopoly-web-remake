@@ -18,7 +18,11 @@ export function PlayerPanel({
     : 'player-panel'
 
   return (
-    <article className={className}>
+    <article
+      className={className}
+      aria-label={`${name}，金币 ${money}，位置第 ${position} 格`}
+      aria-current={isActive ? 'true' : undefined}
+    >
       <div
         className="player-marker"
         style={{ backgroundColor: color }}
