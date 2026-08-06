@@ -124,6 +124,31 @@ button:disabled {
   color: white;
 }
 
+.tile--event {
+  background: #b98cff;
+  color: white;
+}
+
+.tile--linked {
+  outline: 2px solid #f6c453;
+  outline-offset: -3px;
+}
+
+.tile-bonus {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: grid;
+  width: 13px;
+  height: 13px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f6c453;
+  color: #16213e;
+  font-size: 8px;
+  line-height: 1;
+}
+
 .player-panel {
   min-width: 0;
   padding: 20px;
@@ -159,6 +184,12 @@ button:disabled {
 
 .player-panel p + p {
   margin-top: 6px;
+}
+
+.player-type {
+  color: #d8ffe9 !important;
+  font-size: 12px !important;
+  font-weight: 700;
 }
 
 .pieces {
@@ -202,6 +233,11 @@ button:disabled {
 
 .game-controls strong {
   font-size: 16px;
+}
+
+.ai-thinking {
+  color: #f6c453 !important;
+  font-weight: 700;
 }
 
 .dice {
@@ -387,4 +423,138 @@ button:disabled {
   color: #ffb3b3 !important;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.piece--jailed {
+  outline: 2px solid #9aa6b2;
+  outline-offset: 1px;
+}
+
+.player-status--jailed {
+  color: #ffb3b3 !important;
+  font-weight: 700;
+}
+
+.player-items {
+  margin-top: 8px !important;
+  color: #dce7ff !important;
+  font-size: 12px !important;
+  line-height: 1.35;
+}
+
+.shop-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-actions p {
+  color: #d8ffe9;
+  font-size: 11px;
+}
+
+.player-effect {
+  margin-top: 5px !important;
+  font-size: 12px !important;
+  font-weight: 700;
+}
+
+.player-effect--negative {
+  color: #ffb3b3 !important;
+}
+
+.player-effect--positive {
+  color: #d8ffe9 !important;
+}
+
+.event-actions,
+.event-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+}
+
+.event-actions {
+  flex-direction: column;
+  align-items: center;
+}
+
+.event-targets button {
+  padding: 4px 7px;
+  font-size: 10px;
+}
+
+.tile-effects {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  display: flex;
+  gap: 1px;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.tile--selectable {
+  cursor: crosshair;
+  outline: 2px solid #f6c453;
+  outline-offset: 1px;
+}
+
+.tile--selectable:focus-visible {
+  outline: 3px solid white;
+  z-index: 2;
+}
+
+.tile--blocked {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 3px;
+}
+
+.item-actions button {
+  padding: 3px 6px;
+  font-size: 10px;
+}
+
+.remote-actions,
+.placement-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.remote-number-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+}
+
+.remote-number-grid button {
+  min-width: 25px;
+  padding: 3px 6px;
+}
+
+@media (max-width: 900px) {
+  .tile-effects {
+    font-size: 8px;
+  }
+
+  .item-actions button {
+    padding: 2px 4px;
+    font-size: 8px;
+  }
+
+  .remote-number-grid button {
+    min-width: 18px;
+    padding: 1px 3px;
+  }
 }

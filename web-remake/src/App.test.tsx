@@ -14,6 +14,28 @@ afterEach(() => {
 })
 
 describe('大富翁页面', () => {
+  it('可以选择单人模式并创建电脑玩家', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: '单人挑战电脑',
+      }),
+    )
+
+    expect(
+      screen.getByRole('heading', {
+        name: '电脑玩家',
+      }),
+    ).toBeInTheDocument()
+
+    expect(
+      screen.getByText('电脑控制'),
+    ).toBeInTheDocument()
+  })
+
   it('从首页进入游戏后显示棋盘和两名玩家', async () => {
     const user = userEvent.setup()
 

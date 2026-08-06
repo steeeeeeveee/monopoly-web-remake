@@ -1,6 +1,7 @@
 import { boardTiles } from './board'
 import type {
   GameAction,
+  GameMode,
   GameState,
   Player,
   PlayerId,
@@ -38,7 +39,75 @@ export function getRent(level: number): number {
   return rents[level] ?? 0
 }
 
-function createPlayers(): Player[] {
+export function getPropertyRent(
+  property: PropertyState,
+  properties: PropertyState[],
+): number {
+  if (property.ownerId === null) {
+    return 0
+  }
+
+  const propertiesByIndex = new Map(
+    properties.map((item) => [item.tileIndex, item]),
+  )
+  const connectedProperties = [property]
+
+  for (
+    let tileIndex = property.tileIndex - 1;
+    propertiesByIndex.get(tileIndex)?.ownerId ===
+    property.ownerId;
+    tileIndex -= 1
+  ) {
+    const previousProperty =
+      propertiesByIndex.get(tileIndex)
+
+    if (previousProperty) {
+      connectedProperties.unshift(previousProperty)
+    }
+  }
+
+  for (
+    let tileIndex = property.tileIndex + 1;
+    propertiesByIndex.get(tileIndex)?.ownerId ===
+    property.ownerId;
+    tileIndex += 1
+  ) {
+    const nextProperty = propertiesByIndex.get(tileIndex)
+
+    if (nextProperty) {
+      connectedProperties.push(nextProperty)
+    }
+  }
+
+  if (connectedProperties.length < 2) {
+    return getRent(property.level)
+  }
+
+  const baseRentTotal = connectedProperties.reduce(
+    (total, item) => total + getRent(item.level),
+    0,
+  )
+
+  return (
+    baseRentTotal + connectedProperties.length * 100
+  )
+}
+
+export function getPropertyTotalCost(level: number): number {
+  let totalCost = PROPERTY_PRICE
+
+  for (
+    let currentLevel = 1;
+    currentLevel < level;
+    currentLevel += 1
+  ) {
+    totalCost += getUpgradeCost(currentLevel)
+  }
+
+  return totalCost
+}
+
+function createPlayers(mode: GameMode): Player[] {
   return [
     {
       id: 0,
@@ -47,14 +116,34 @@ function createPlayers(): Player[] {
       money: STARTING_MONEY,
       position: 0,
       bankrupt: false,
+      inJail: false,
+      jailTurnsLeft: 0,
+      items: {
+        bomb: 0,
+        remote: 0,
+        shield: 0,
+      },
+      confusedTurns: 0,
+      hasForcedAcquisition: false,
+      isAI: false,
     },
     {
       id: 1,
-      name: '玩家 2',
+      name: mode === 'ai' ? '电脑玩家' : '玩家 2',
       color: '#4dabf7',
       money: STARTING_MONEY,
       position: 0,
       bankrupt: false,
+      inJail: false,
+      jailTurnsLeft: 0,
+      items: {
+        bomb: 0,
+        remote: 0,
+        shield: 0,
+      },
+      confusedTurns: 0,
+      hasForcedAcquisition: false,
+      isAI: mode === 'ai',
     },
   ]
 }
@@ -69,17 +158,31 @@ function createProperties(): PropertyState[] {
     }))
 }
 
-export function createInitialGameState(): GameState {
+function createTileEffects() {
+  return boardTiles.map((tile) => ({
+    tileIndex: tile.index,
+    hasBomb: false,
+    hasShield: false,
+  }))
+}
+
+export function createInitialGameState(
+  mode: GameMode = 'local',
+): GameState {
   return {
-    players: createPlayers(),
+    mode,
+    players: createPlayers(mode),
     properties: createProperties(),
+    tileEffects: createTileEffects(),
     currentPlayerId: 0,
     phase: 'waitingForRoll',
     decision: null,
     diceValue: null,
     movementQueue: [],
+    movementDirection: 1,
     log: ['游戏开始，玩家 1 先掷骰。'],
     winnerId: null,
+    placementItem: null,
   }
 }
 
@@ -96,12 +199,66 @@ function finishTurn(state: GameState): GameState {
     return state
   }
 
+  let players = state.players
+  let log = state.log
+  let nextPlayerId = getNextPlayerId(
+    state.currentPlayerId,
+  )
+
+  for (
+    let checkedPlayers = 0;
+    checkedPlayers < players.length;
+    checkedPlayers += 1
+  ) {
+    const nextPlayer = players.find(
+      (player) => player.id === nextPlayerId,
+    )
+
+    if (!nextPlayer || nextPlayer.bankrupt) {
+      nextPlayerId = getNextPlayerId(nextPlayerId)
+      continue
+    }
+
+    if (
+      !nextPlayer.inJail ||
+      nextPlayer.jailTurnsLeft <= 0
+    ) {
+      break
+    }
+
+    const remainingTurns =
+      nextPlayer.jailTurnsLeft - 1
+
+    players = players.map((player) =>
+      player.id === nextPlayer.id
+        ? {
+            ...player,
+            inJail: remainingTurns > 0,
+            jailTurnsLeft: remainingTurns,
+          }
+        : player,
+    )
+
+    log = addLog(
+      log,
+      remainingTurns > 0
+        ? `${nextPlayer.name} 在监狱中，跳过本回合`
+        : `${nextPlayer.name} 在监狱中跳过本回合，现已出狱`,
+    )
+
+    nextPlayerId = getNextPlayerId(nextPlayerId)
+  }
+
   return {
     ...state,
-    currentPlayerId: getNextPlayerId(state.currentPlayerId),
+    players,
+    currentPlayerId: nextPlayerId,
     phase: 'waitingForRoll',
     decision: null,
     movementQueue: [],
+    movementDirection: 1,
+    log,
+    placementItem: null,
   }
 }
 
@@ -125,6 +282,8 @@ function applyBankruptcy(
       ? {
           ...player,
           bankrupt: true,
+          inJail: false,
+          jailTurnsLeft: 0,
         }
       : player,
   )
@@ -164,7 +323,9 @@ function applyBankruptcy(
     phase: 'gameOver',
     decision: null,
     movementQueue: [],
+    movementDirection: 1,
     winnerId: winner?.id ?? null,
+    placementItem: null,
     log: addLog(
       bankruptState.log,
       winner
@@ -190,6 +351,108 @@ function resolveLanding(state: GameState): GameState {
 
   if (!tile) {
     return finishTurn(state)
+  }
+
+  const tileEffect = state.tileEffects.find(
+    (effect) => effect.tileIndex === tile.index,
+  )
+
+  if (tileEffect?.hasBomb) {
+    const tileEffects = state.tileEffects.map((effect) =>
+      effect.tileIndex === tile.index
+        ? {
+            ...effect,
+            hasBomb: false,
+          }
+        : effect,
+    )
+
+    const players = state.players.map((player) =>
+      player.id === currentPlayer.id
+        ? {
+            ...player,
+            position: 35,
+            inJail: true,
+            jailTurnsLeft: 1,
+          }
+        : player,
+    )
+
+    return finishTurn({
+      ...state,
+      players,
+      tileEffects,
+      log: addLog(
+        state.log,
+        `${currentPlayer.name} 踩到炸弹，被传送到第 35 格并进入监狱`,
+      ),
+    })
+  }
+
+  if (tile.kind === 'gold') {
+    const reward = tile.reward ?? 0
+    const players = state.players.map((player) =>
+      player.id === currentPlayer.id
+        ? {
+            ...player,
+            money: player.money + reward,
+          }
+        : player,
+    )
+
+    return finishTurn({
+      ...state,
+      players,
+      log: addLog(
+        state.log,
+        `${currentPlayer.name} 获得 ${reward} 金币`,
+      ),
+    })
+  }
+
+  if (tile.kind === 'jail') {
+    const players = state.players.map((player) =>
+      player.id === currentPlayer.id
+        ? {
+            ...player,
+            inJail: true,
+            jailTurnsLeft: 1,
+          }
+        : player,
+    )
+
+    return finishTurn({
+      ...state,
+      players,
+      log: addLog(
+        state.log,
+        `${currentPlayer.name} 进入监狱，下回合暂停一次`,
+      ),
+    })
+  }
+
+  if (tile.kind === 'shop') {
+    return {
+      ...state,
+      phase: 'awaitingShop',
+      decision: null,
+      log: addLog(
+        state.log,
+        `${currentPlayer.name} 进入商店，可以免费抽取一件道具`,
+      ),
+    }
+  }
+
+  if (tile.kind === 'event') {
+    return {
+      ...state,
+      phase: 'awaitingEventTarget',
+      decision: null,
+      log: addLog(
+        state.log,
+        `${currentPlayer.name} 触发随机事件，请选择目标玩家`,
+      ),
+    }
   }
 
   if (tile.kind !== 'property') {
@@ -262,7 +525,47 @@ function resolveLanding(state: GameState): GameState {
     return finishTurn(state)
   }
 
-  const rent = getRent(property.level)
+  if (currentPlayer.hasForcedAcquisition) {
+    const acquisitionCost = getPropertyTotalCost(
+      property.level,
+    )
+    const players = state.players.map((player) =>
+      player.id === currentPlayer.id
+        ? {
+            ...player,
+            hasForcedAcquisition: false,
+          }
+        : player,
+    )
+
+    return {
+      ...state,
+      players,
+      phase: 'awaitingDecision',
+      decision: 'acquire',
+      log: addLog(
+        state.log,
+        currentPlayer.money >= acquisitionCost
+          ? `是否花费 ${acquisitionCost} 金币强制收购第 ${property.tileIndex} 格？`
+          : '资金不足，无法强制收购，可以跳过并正常结算租金',
+      ),
+    }
+  }
+
+  if (owner.inJail) {
+    return finishTurn({
+      ...state,
+      log: addLog(
+        state.log,
+        `${owner.name} 正在监狱中，本次不收租金`,
+      ),
+    })
+  }
+
+  const rent = getPropertyRent(
+    property,
+    state.properties,
+  )
 
   const players = state.players.map((player) => {
     if (player.id === currentPlayer.id) {
@@ -324,26 +627,52 @@ export function gameReducer(
           player.id === state.currentPlayerId,
       )
 
-      if (!currentPlayer || currentPlayer.bankrupt) {
+      if (
+        !currentPlayer ||
+        currentPlayer.bankrupt ||
+        currentPlayer.inJail
+      ) {
         return state
       }
+
+      const movementDirection: 1 | -1 =
+        currentPlayer.confusedTurns > 0 ? -1 : 1
+
+      const players = state.players.map((player) =>
+        player.id === currentPlayer.id &&
+        movementDirection === -1
+          ? {
+              ...player,
+              confusedTurns: Math.max(
+                0,
+                player.confusedTurns - 1,
+              ),
+            }
+          : player,
+      )
 
       const movementQueue = Array.from(
         { length: action.value },
         (_, step) =>
-          (currentPlayer.position + step + 1) %
+          (currentPlayer.position +
+            movementDirection * (step + 1) +
+            BOARD_SIZE) %
           BOARD_SIZE,
       )
 
       return {
         ...state,
+        players,
         phase: 'moving',
         decision: null,
         diceValue: action.value,
         movementQueue,
+        movementDirection,
         log: addLog(
           state.log,
-          `${currentPlayer.name} 掷出了 ${action.value} 点`,
+          movementDirection === -1
+            ? `${currentPlayer.name} 受到迷惑，反向移动 ${action.value} 格`
+            : `${currentPlayer.name} 掷出了 ${action.value} 点`,
         ),
       }
     }
@@ -364,7 +693,9 @@ export function gameReducer(
 
       const remainingQueue =
         state.movementQueue.slice(1)
-      const passedStart = nextPosition === 0
+      const passedStart =
+        nextPosition === 0 &&
+        state.movementDirection === 1
 
       const players = state.players.map((player) => {
         if (player.id !== state.currentPlayerId) {
@@ -390,6 +721,33 @@ export function gameReducer(
               `经过起点，获得 ${START_REWARD} 金币`,
             )
           : state.log,
+      }
+
+      const tileEffect = state.tileEffects.find(
+        (effect) =>
+          effect.tileIndex === nextPosition,
+      )
+
+      if (tileEffect?.hasShield) {
+        const tileEffects = state.tileEffects.map(
+          (effect) =>
+            effect.tileIndex === nextPosition
+              ? {
+                  ...effect,
+                  hasShield: false,
+                }
+              : effect,
+        )
+
+        return resolveLanding({
+          ...movedState,
+          tileEffects,
+          movementQueue: [],
+          log: addLog(
+            movedState.log,
+            `${state.players[state.currentPlayerId]?.name ?? '玩家'} 被蛛网拦住，停在第 ${nextPosition} 格`,
+          ),
+        })
       }
 
       if (remainingQueue.length > 0) {
@@ -535,13 +893,452 @@ export function gameReducer(
         return state
       }
 
+      if (state.decision === 'acquire') {
+        return resolveLanding({
+          ...state,
+          decision: null,
+        })
+      }
+
       return finishTurn({
         ...state,
         log: addLog(state.log, '放弃本次操作'),
       })
     }
 
+    case 'RECEIVE_SHOP_ITEM': {
+      if (state.phase !== 'awaitingShop') {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+
+      const currentTile = boardTiles.find(
+        (tile) =>
+          tile.index === currentPlayer?.position,
+      )
+
+      if (!currentPlayer || currentTile?.kind !== 'shop') {
+        return state
+      }
+
+      const players = state.players.map((player) =>
+        player.id === currentPlayer.id
+          ? {
+              ...player,
+              items: {
+                ...player.items,
+                [action.item]:
+                  player.items[action.item] + 1,
+              },
+            }
+          : player,
+      )
+
+      const itemNames = {
+        bomb: '炸弹',
+        remote: '遥控骰子',
+        shield: '蛛网',
+      }
+
+      return finishTurn({
+        ...state,
+        players,
+        log: addLog(
+          state.log,
+          `${currentPlayer.name} 获得了${itemNames[action.item]}`,
+        ),
+      })
+    }
+
+    case 'START_ITEM_PLACEMENT': {
+      if (state.phase !== 'waitingForRoll') {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+
+      if (
+        !currentPlayer ||
+        currentPlayer.items[action.item] <= 0
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        phase: 'placingItem',
+        placementItem: action.item,
+        log: addLog(
+          state.log,
+          action.item === 'bomb'
+            ? '请选择放置炸弹的格子'
+            : '请选择放置蛛网的格子',
+        ),
+      }
+    }
+
+    case 'PLACE_ITEM': {
+      if (
+        state.phase !== 'placingItem' ||
+        state.placementItem === null
+      ) {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+      const tileEffect = state.tileEffects.find(
+        (effect) =>
+          effect.tileIndex === action.tileIndex,
+      )
+      const item = state.placementItem
+
+      if (
+        !currentPlayer ||
+        !tileEffect ||
+        currentPlayer.items[item] <= 0 ||
+        (item === 'bomb' && tileEffect.hasBomb) ||
+        (item === 'shield' && tileEffect.hasShield)
+      ) {
+        return state
+      }
+
+      const players = state.players.map((player) =>
+        player.id === currentPlayer.id
+          ? {
+              ...player,
+              items: {
+                ...player.items,
+                [item]: player.items[item] - 1,
+              },
+            }
+          : player,
+      )
+
+      const tileEffects = state.tileEffects.map(
+        (effect) =>
+          effect.tileIndex === action.tileIndex
+            ? {
+                ...effect,
+                hasBomb:
+                  item === 'bomb'
+                    ? true
+                    : effect.hasBomb,
+                hasShield:
+                  item === 'shield'
+                    ? true
+                    : effect.hasShield,
+              }
+            : effect,
+      )
+
+      return {
+        ...state,
+        players,
+        tileEffects,
+        phase: 'waitingForRoll',
+        placementItem: null,
+        log: addLog(
+          state.log,
+          `${currentPlayer.name} 在第 ${action.tileIndex} 格放置了${
+            item === 'bomb' ? '炸弹' : '蛛网'
+          }`,
+        ),
+      }
+    }
+
+    case 'START_REMOTE_DICE': {
+      if (state.phase !== 'waitingForRoll') {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+
+      if (!currentPlayer || currentPlayer.items.remote <= 0) {
+        return state
+      }
+
+      return {
+        ...state,
+        phase: 'choosingRemoteDice',
+        log: addLog(
+          state.log,
+          '请选择遥控骰子的点数',
+        ),
+      }
+    }
+
+    case 'USE_REMOTE_DICE': {
+      if (
+        state.phase !== 'choosingRemoteDice' ||
+        !Number.isInteger(action.value) ||
+        action.value < 1 ||
+        action.value > 6
+      ) {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+
+      if (!currentPlayer || currentPlayer.items.remote <= 0) {
+        return state
+      }
+
+      const movementDirection: 1 | -1 =
+        currentPlayer.confusedTurns > 0 ? -1 : 1
+
+      const players = state.players.map((player) =>
+        player.id === currentPlayer.id
+          ? {
+              ...player,
+              items: {
+                ...player.items,
+                remote: player.items.remote - 1,
+              },
+              confusedTurns:
+                movementDirection === -1
+                  ? Math.max(0, player.confusedTurns - 1)
+                  : player.confusedTurns,
+            }
+          : player,
+      )
+
+      const movementQueue = Array.from(
+        { length: action.value },
+        (_, step) =>
+          (currentPlayer.position +
+            movementDirection * (step + 1) +
+            BOARD_SIZE) %
+          BOARD_SIZE,
+      )
+
+      return {
+        ...state,
+        players,
+        phase: 'moving',
+        diceValue: action.value,
+        movementQueue,
+        movementDirection,
+        log: addLog(
+          state.log,
+          movementDirection === -1
+            ? `${currentPlayer.name} 使用遥控骰子并反向移动 ${action.value} 格`
+            : `${currentPlayer.name} 使用遥控骰子选择了 ${action.value} 点`,
+        ),
+      }
+    }
+
+    case 'CANCEL_ITEM_USE': {
+      if (
+        state.phase !== 'placingItem' &&
+        state.phase !== 'choosingRemoteDice'
+      ) {
+        return state
+      }
+
+      return {
+        ...state,
+        phase: 'waitingForRoll',
+        placementItem: null,
+        log: addLog(state.log, '取消使用道具'),
+      }
+    }
+
+    case 'RESOLVE_RANDOM_EVENT': {
+      if (state.phase !== 'awaitingEventTarget') {
+        return state
+      }
+
+      const target = state.players.find(
+        (player) => player.id === action.targetId,
+      )
+
+      if (!target || target.bankrupt) {
+        return state
+      }
+
+      if (action.event === 'meteor') {
+        const targetProperty = state.properties.find(
+          (property) =>
+            property.tileIndex === action.propertyTileIndex &&
+            property.ownerId === target.id,
+        )
+
+        if (!targetProperty) {
+          return finishTurn({
+            ...state,
+            log: addLog(
+              state.log,
+              `${target.name} 没有可被陨石摧毁的地产`,
+            ),
+          })
+        }
+
+        const properties = state.properties.map(
+          (property) =>
+            property.tileIndex === targetProperty.tileIndex
+              ? {
+                  ...property,
+                  ownerId: null,
+                  level: 0,
+                }
+              : property,
+        )
+
+        return finishTurn({
+          ...state,
+          properties,
+          log: addLog(
+            state.log,
+            `陨石摧毁了${target.name}的第 ${targetProperty.tileIndex} 格地产`,
+          ),
+        })
+      }
+
+      if (action.event === 'confusion') {
+        const players = state.players.map((player) =>
+          player.id === target.id
+            ? {
+                ...player,
+                confusedTurns: player.confusedTurns + 1,
+              }
+            : player,
+        )
+
+        return finishTurn({
+          ...state,
+          players,
+          log: addLog(
+            state.log,
+            `${target.name} 被迷惑，下一回合将反向移动`,
+          ),
+        })
+      }
+
+      if (
+        action.event === 'moneyDouble' ||
+        action.event === 'moneyHalf'
+      ) {
+        const newMoney =
+          action.event === 'moneyDouble'
+            ? target.money + Math.min(target.money, 5000)
+            : Math.floor(target.money * 0.5)
+        const players = state.players.map((player) =>
+          player.id === target.id
+            ? {
+                ...player,
+                money: newMoney,
+              }
+            : player,
+        )
+
+        return finishTurn({
+          ...state,
+          players,
+          log: addLog(
+            state.log,
+            action.event === 'moneyDouble'
+              ? `${target.name} 的资产增加到 ${newMoney} 金币`
+              : `${target.name} 的资产减半为 ${newMoney} 金币`,
+          ),
+        })
+      }
+
+      const players = state.players.map((player) =>
+        player.id === target.id
+          ? {
+              ...player,
+              hasForcedAcquisition: true,
+            }
+          : player,
+      )
+
+      return finishTurn({
+        ...state,
+        players,
+        log: addLog(
+          state.log,
+          `${target.name} 获得一次强制收购权`,
+        ),
+      })
+    }
+
+    case 'ACQUIRE_PROPERTY': {
+      if (
+        state.phase !== 'awaitingDecision' ||
+        state.decision !== 'acquire'
+      ) {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) =>
+          player.id === state.currentPlayerId,
+      )
+      const property = state.properties.find(
+        (item) =>
+          item.tileIndex === currentPlayer?.position,
+      )
+
+      if (
+        !currentPlayer ||
+        !property ||
+        property.ownerId === null ||
+        property.ownerId === currentPlayer.id
+      ) {
+        return state
+      }
+
+      const cost = getPropertyTotalCost(property.level)
+
+      if (currentPlayer.money < cost) {
+        return state
+      }
+
+      const players = state.players.map((player) =>
+        player.id === currentPlayer.id
+          ? {
+              ...player,
+              money: player.money - cost,
+            }
+          : player,
+      )
+      const properties = state.properties.map((item) =>
+        item.tileIndex === property.tileIndex
+          ? {
+              ...item,
+              ownerId: currentPlayer.id,
+            }
+          : item,
+      )
+
+      return finishTurn({
+        ...state,
+        players,
+        properties,
+        log: addLog(
+          state.log,
+          `${currentPlayer.name} 花费 ${cost} 金币强制收购了第 ${property.tileIndex} 格`,
+        ),
+      })
+    }
+
     case 'RESET':
-      return createInitialGameState()
+      return createInitialGameState(action.mode ?? state.mode)
   }
 }

@@ -4,6 +4,7 @@ export type TileKind =
   | 'gold'
   | 'jail'
   | 'shop'
+  | 'event'
   | 'function'
 
 export interface BoardTile {
@@ -12,6 +13,7 @@ export interface BoardTile {
   row: number
   kind: TileKind
   label: string
+  reward?: number
 }
 
 interface Move {
@@ -35,16 +37,33 @@ const pathMoves: Move[] = [
   { dx: -1, dy: 0, count: 8 },
 ]
 
-const goldTiles = new Set([3, 6, 9, 19, 26, 32, 39, 42, 45, 50])
+const goldRewards: Record<number, number> = {
+  3: 666,
+  6: 666,
+  9: 1111,
+  19: 666,
+  26: 666,
+  32: 3333,
+  39: 1111,
+  42: 666,
+  45: 666,
+  50: 1111,
+}
+
+const goldTiles = new Set(
+  Object.keys(goldRewards).map(Number),
+)
 const jailTiles = new Set([22, 48])
 const shopTiles = new Set([13, 28, 37, 46])
-const functionTiles = new Set([5, 16, 30, 35, 43])
+const eventTiles = new Set([5, 16, 30, 43])
+const functionTiles = new Set([35])
 
 function getTileKind(index: number): TileKind {
   if (index === 0) return 'start'
   if (goldTiles.has(index)) return 'gold'
   if (jailTiles.has(index)) return 'jail'
   if (shopTiles.has(index)) return 'shop'
+  if (eventTiles.has(index)) return 'event'
   if (functionTiles.has(index)) return 'function'
   return 'property'
 }
@@ -54,7 +73,8 @@ function getTileLabel(index: number, kind: TileKind): string {
   if (kind === 'gold') return '金币'
   if (kind === 'jail') return '监狱'
   if (kind === 'shop') return '商店'
-  if (kind === 'function') return '事件'
+  if (kind === 'event') return '事件'
+  if (kind === 'function') return '功能'
   return String(index)
 }
 
@@ -86,6 +106,10 @@ function buildBoardTiles(): BoardTile[] {
       row: 10 - position.y,
       kind,
       label: getTileLabel(index, kind),
+      reward:
+        kind === 'gold'
+          ? goldRewards[index]
+          : undefined,
     }
   })
 }
