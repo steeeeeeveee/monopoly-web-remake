@@ -13,6 +13,18 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
+async function enterLocalGame(
+  user: ReturnType<typeof userEvent.setup>,
+) {
+  await user.click(
+    screen.getByRole('button', {
+      name: '双人同屏',
+    }),
+  )
+
+  await screen.findByLabelText('大富翁棋盘')
+}
+
 describe('大富翁页面', () => {
   it('可以选择单人模式并创建电脑玩家', async () => {
     const user = userEvent.setup()
@@ -26,14 +38,12 @@ describe('大富翁页面', () => {
     )
 
     expect(
-      screen.getByRole('heading', {
+      await screen.findByRole('heading', {
         name: '电脑玩家',
       }),
     ).toBeInTheDocument()
 
-    expect(
-      screen.getByText('电脑控制'),
-    ).toBeInTheDocument()
+    expect(screen.getByText('电脑控制')).toBeInTheDocument()
   })
 
   it('从首页进入游戏后显示棋盘和两名玩家', async () => {
@@ -51,24 +61,13 @@ describe('大富翁页面', () => {
       screen.queryByLabelText('大富翁棋盘'),
     ).not.toBeInTheDocument()
 
-    await user.click(
-      screen.getByRole('button', {
-        name: '开始游戏',
-      }),
-    )
+    await enterLocalGame(user)
 
     expect(
       screen.getByLabelText('大富翁棋盘'),
     ).toBeInTheDocument()
-
-    expect(
-      screen.getAllByText('金币：5000'),
-    ).toHaveLength(2)
-
-    expect(
-      screen.getAllByText('位置：第 0 格'),
-    ).toHaveLength(2)
-
+    expect(screen.getAllByText('¥ 5000')).toHaveLength(2)
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
     expect(
       screen.getByRole('button', {
         name: '掷骰子',
@@ -82,12 +81,7 @@ describe('大富翁页面', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.2)
 
     render(<App />)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: '开始游戏',
-      }),
-    )
+    await enterLocalGame(user)
 
     await user.click(
       screen.getByRole('button', {
@@ -103,22 +97,16 @@ describe('大富翁页面', () => {
 
     const buyButton = await screen.findByRole(
       'button',
-      {
-        name: '购买（1000）',
-      },
-      {
-        timeout: 2000,
-      },
+      { name: '确认购买' },
+      { timeout: 2000 },
     )
 
     expect(buyButton).toBeEnabled()
-
     expect(
       screen.getByRole('button', {
-        name: '跳过',
+        name: '暂时跳过',
       }),
     ).toBeEnabled()
-
     expect(
       screen.queryByRole('button', {
         name: '掷骰子',
@@ -127,13 +115,8 @@ describe('大富翁页面', () => {
 
     await user.click(buyButton)
 
-    expect(
-      screen.getByText('金币：4000'),
-    ).toBeInTheDocument()
-
-    expect(
-      screen.getAllByText('金币：5000'),
-    ).toHaveLength(1)
+    expect(screen.getByText('¥ 4000')).toBeInTheDocument()
+    expect(screen.getAllByText('¥ 5000')).toHaveLength(1)
 
     await user.click(
       screen.getByRole('button', {
@@ -141,13 +124,8 @@ describe('大富翁页面', () => {
       }),
     )
 
-    expect(
-      screen.getAllByText('金币：5000'),
-    ).toHaveLength(2)
-
-    expect(
-      screen.getAllByText('位置：第 0 格'),
-    ).toHaveLength(2)
+    expect(screen.getAllByText('¥ 5000')).toHaveLength(2)
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
   })
 
   it('支持 R 掷骰和 Escape 跳过', async () => {
@@ -156,12 +134,7 @@ describe('大富翁页面', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.2)
 
     render(<App />)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: '开始游戏',
-      }),
-    )
+    await enterLocalGame(user)
 
     fireEvent.keyDown(window, {
       key: 'r',
@@ -176,12 +149,8 @@ describe('大富翁页面', () => {
 
     await screen.findByRole(
       'button',
-      {
-        name: '购买（1000）',
-      },
-      {
-        timeout: 2000,
-      },
+      { name: '确认购买' },
+      { timeout: 2000 },
     )
 
     fireEvent.keyDown(window, {
@@ -198,18 +167,33 @@ describe('大富翁页面', () => {
 })
 
 describe('焦点管理', () => {
+  it('可以用键盘进入双人同屏模式', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.tab()
+
+    expect(
+      screen.getByRole('button', {
+        name: '双人同屏',
+      }),
+    ).toHaveFocus()
+
+    await user.keyboard('{Enter}')
+
+    expect(
+      await screen.findByLabelText('大富翁棋盘'),
+    ).toBeInTheDocument()
+  })
+
   it('根据游戏阶段自动选中正确按钮', async () => {
     const user = userEvent.setup()
 
     vi.spyOn(Math, 'random').mockReturnValue(0.2)
 
     render(<App />)
-
-    await user.click(
-      screen.getByRole('button', {
-        name: '开始游戏',
-      }),
-    )
+    await enterLocalGame(user)
 
     const rollButton = screen.getByRole('button', {
       name: '掷骰子',
@@ -221,12 +205,8 @@ describe('焦点管理', () => {
 
     const buyButton = await screen.findByRole(
       'button',
-      {
-        name: '购买（1000）',
-      },
-      {
-        timeout: 2000,
-      },
+      { name: '确认购买' },
+      { timeout: 2000 },
     )
 
     expect(buyButton).toHaveFocus()

@@ -1,11 +1,12 @@
 :root {
   font-family:
-    system-ui,
     "Microsoft YaHei",
+    "PingFang SC",
     "Segoe UI",
+    system-ui,
     sans-serif;
-  color: #fff7df;
-  background: #16213e;
+  color: #19233e;
+  background: #28324f;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -18,15 +19,27 @@
 
 html {
   min-width: 320px;
-  background: #16213e;
+  min-height: 100%;
+  background: #28324f;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
+  overflow-x: hidden;
 }
 
 button {
   font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+img,
+svg {
+  display: block;
 }
