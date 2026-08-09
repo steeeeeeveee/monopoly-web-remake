@@ -3,6 +3,7 @@ import {
   getUpgradeCost,
   PROPERTY_PRICE,
 } from './gameReducer'
+import { getRandomDiceValue } from './constants'
 import { createRandomEventAction } from './events'
 import type {
   GameAction,
@@ -15,7 +16,7 @@ type RandomSource = () => number
 const shopItems: ItemType[] = [
   'bomb',
   'remote',
-  'shield',
+  'web',
 ]
 
 function chooseIndex(
@@ -56,7 +57,7 @@ export function getAIAction(
         return { type: 'START_REMOTE_DICE' }
       }
 
-      if (item === 'bomb' || item === 'shield') {
+      if (item === 'bomb' || item === 'web') {
         return {
           type: 'START_ITEM_PLACEMENT',
           item,
@@ -66,14 +67,14 @@ export function getAIAction(
 
     return {
       type: 'ROLL',
-      value: chooseIndex(6, random) + 1,
+      value: getRandomDiceValue(random),
     }
   }
 
   if (state.phase === 'choosingRemoteDice') {
     return {
       type: 'USE_REMOTE_DICE',
-      value: chooseIndex(6, random) + 1,
+      value: getRandomDiceValue(random),
     }
   }
 
@@ -85,7 +86,7 @@ export function getAIAction(
       (effect) =>
         state.placementItem === 'bomb'
           ? !effect.hasBomb
-          : !effect.hasShield,
+          : !effect.hasWeb,
     )
 
     if (availableTiles.length === 0) {
@@ -103,14 +104,6 @@ export function getAIAction(
           tileIndex: tile.tileIndex,
         }
       : { type: 'CANCEL_ITEM_USE' }
-  }
-
-  if (state.phase === 'awaitingShop') {
-    const item = shopItems[chooseIndex(shopItems.length, random)]
-
-    return item
-      ? { type: 'RECEIVE_SHOP_ITEM', item }
-      : null
   }
 
   if (state.phase === 'awaitingDecision') {

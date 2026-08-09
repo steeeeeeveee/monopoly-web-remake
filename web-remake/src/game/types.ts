@@ -15,20 +15,20 @@ export type GamePhase =
 export type ItemType =
   | 'bomb'
   | 'remote'
-  | 'shield'
+  | 'web'
 
 export interface PlayerInventory {
   bomb: number
   remote: number
-  shield: number
+  web: number
 }
 
-export type PlacementItem = 'bomb' | 'shield'
+export type PlacementItem = 'bomb' | 'web'
 
 export interface TileEffectState {
   tileIndex: number
   hasBomb: boolean
-  hasShield: boolean
+  hasWeb: boolean
 }
 
 export type PropertyDecision =

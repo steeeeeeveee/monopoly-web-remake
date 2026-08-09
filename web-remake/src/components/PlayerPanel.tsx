@@ -36,7 +36,7 @@ export function PlayerPanel({
       className={className}
       aria-label={`${name}，金币 ${money}，位置第 ${position} 格，${
         inJail ? '正在监狱中' : '状态正常'
-      }，炸弹 ${items.bomb}，遥控骰子 ${items.remote}，蛛网 ${items.shield}`}
+      }，炸弹 ${items.bomb}，遥控骰子 ${items.remote}，蛛网 ${items.web}`}
       aria-current={isActive ? 'true' : undefined}
     >
       <div
@@ -63,7 +63,7 @@ export function PlayerPanel({
       </p>
       <p className="player-items">
         道具：炸弹 {items.bomb} · 遥控 {items.remote} ·
-        蛛网 {items.shield}
+        蛛网 {items.web}
       </p>
       {confusedTurns > 0 && (
         <p className="player-effect player-effect--negative">

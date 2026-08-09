@@ -15,6 +15,7 @@ interface GameModalProps {
   onCancel?: () => void
   closeLabel?: string
   tone?: 'default' | 'positive' | 'warning'
+  className?: string
 }
 
 const focusableSelector = [
@@ -34,6 +35,7 @@ export function GameModal({
   onCancel,
   closeLabel = '关闭',
   tone = 'default',
+  className = '',
 }: GameModalProps) {
   const titleId = useId()
   const descriptionId = useId()
@@ -105,7 +107,7 @@ export function GameModal({
     <div className="modal-layer">
       <div className="modal-backdrop" aria-hidden="true" />
       <div
-        className={`game-modal game-modal--${tone}`}
+        className={`game-modal game-modal--${tone} ${className}`}
         ref={dialogRef}
         role="dialog"
         aria-modal="true"

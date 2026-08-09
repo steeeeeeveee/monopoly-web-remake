@@ -3,16 +3,19 @@ import {
   getDiceFaceSource,
   rollingDiceFrames,
 } from '../ui/visuals'
+import { DICE_ROLL_DURATION_MS } from '../game/constants'
 
 interface DiceViewProps {
   value: number | null
   isRolling: boolean
+  onAnimationComplete?: () => void
   className?: string
 }
 
 export function DiceView({
   value,
   isRolling,
+  onAnimationComplete,
   className = '',
 }: DiceViewProps) {
   const [rollingFrame, setRollingFrame] = useState(0)
@@ -32,6 +35,7 @@ export function DiceView({
 
     if (reduceMotion) {
       setShowRollingFrame(false)
+      onAnimationComplete?.()
       return
     }
 
@@ -47,13 +51,14 @@ export function DiceView({
     const finishTimer = window.setTimeout(() => {
       setShowRollingFrame(false)
       window.clearInterval(frameTimer)
-    }, 490)
+      onAnimationComplete?.()
+    }, DICE_ROLL_DURATION_MS)
 
     return () => {
       window.clearInterval(frameTimer)
       window.clearTimeout(finishTimer)
     }
-  }, [isRolling, value])
+  }, [isRolling, onAnimationComplete, value])
 
   const imageSource = showRollingFrame
     ? rollingDiceFrames[rollingFrame]

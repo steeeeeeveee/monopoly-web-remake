@@ -425,7 +425,7 @@ describe('商店与背包', () => {
 
     state = gameReducer(state, {
       type: 'RECEIVE_SHOP_ITEM',
-      item: 'shield',
+      item: 'web',
     })
 
     const playerOne = state.players.find(
@@ -435,7 +435,7 @@ describe('商店与背包', () => {
     expect(playerOne?.items).toEqual({
       bomb: 0,
       remote: 0,
-      shield: 1,
+      web: 1,
     })
     expect(state.phase).toBe('waitingForRoll')
     expect(state.currentPlayerId).toBe(1)
@@ -554,7 +554,7 @@ describe('道具使用', () => {
               ...player,
               items: {
                 ...player.items,
-                shield: 1,
+                web: 1,
               },
             }
           : player,
@@ -563,7 +563,7 @@ describe('道具使用', () => {
 
     state = gameReducer(state, {
       type: 'START_ITEM_PLACEMENT',
-      item: 'shield',
+      item: 'web',
     })
     state = gameReducer(state, {
       type: 'PLACE_ITEM',
@@ -577,9 +577,80 @@ describe('道具使用', () => {
     state = finishMovement(state)
 
     expect(state.players[0]?.position).toBe(2)
-    expect(state.tileEffects[2]?.hasShield).toBe(false)
+    expect(state.tileEffects[2]?.hasWeb).toBe(false)
     expect(state.movementQueue).toEqual([])
     expect(state.phase).toBe('awaitingDecision')
+  })
+})
+
+describe('1–12 点骰子边界', () => {
+  it.each([1, 12])('普通骰子接受点数 %s', (value) => {
+    const state = createInitialGameState()
+    const nextState = gameReducer(state, {
+      type: 'ROLL',
+      value,
+    })
+
+    expect(nextState.phase).toBe('moving')
+    expect(nextState.movementQueue).toHaveLength(value)
+  })
+
+  it.each([0, 13])('普通骰子拒绝点数 %s', (value) => {
+    const state = createInitialGameState()
+
+    expect(
+      gameReducer(state, { type: 'ROLL', value }),
+    ).toBe(state)
+  })
+
+  it.each([1, 12])('遥控骰子接受点数 %s', (value) => {
+    let state = createInitialGameState()
+    state = {
+      ...state,
+      players: state.players.map((player) =>
+        player.id === 0
+          ? {
+              ...player,
+              items: { ...player.items, remote: 1 },
+            }
+          : player,
+      ),
+    }
+    state = gameReducer(state, {
+      type: 'START_REMOTE_DICE',
+    })
+    state = gameReducer(state, {
+      type: 'USE_REMOTE_DICE',
+      value,
+    })
+
+    expect(state.phase).toBe('moving')
+    expect(state.movementQueue).toHaveLength(value)
+  })
+
+  it.each([0, 13])('遥控骰子拒绝点数 %s', (value) => {
+    let state = createInitialGameState()
+    state = {
+      ...state,
+      players: state.players.map((player) =>
+        player.id === 0
+          ? {
+              ...player,
+              items: { ...player.items, remote: 1 },
+            }
+          : player,
+      ),
+    }
+    state = gameReducer(state, {
+      type: 'START_REMOTE_DICE',
+    })
+
+    expect(
+      gameReducer(state, {
+        type: 'USE_REMOTE_DICE',
+        value,
+      }),
+    ).toBe(state)
   })
 })
 

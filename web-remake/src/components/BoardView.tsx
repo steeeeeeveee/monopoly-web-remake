@@ -56,8 +56,8 @@ export function BoardView({
         const placementBlocked =
           (state.placementItem === 'bomb' &&
             tileEffect?.hasBomb) ||
-          (state.placementItem === 'shield' &&
-            tileEffect?.hasShield)
+          (state.placementItem === 'web' &&
+            tileEffect?.hasWeb)
         const rent = property
           ? getPropertyRent(property, state.properties)
           : 0
@@ -140,13 +140,13 @@ export function BoardView({
               </span>
             )}
             {(tileEffect?.hasBomb ||
-              tileEffect?.hasShield) && (
+              tileEffect?.hasWeb) && (
               <span className="tile-effect-icons">
                 {tileEffect.hasBomb && (
                   <GameIcon name="bomb" title="炸弹" />
                 )}
-                {tileEffect.hasShield && (
-                  <GameIcon name="shield" title="蛛网" />
+                {tileEffect.hasWeb && (
+                  <GameIcon name="web" title="蛛网" />
                 )}
               </span>
             )}

@@ -2,8 +2,10 @@ import type { Dispatch } from 'react'
 import type {
   GameAction,
   GameState,
+  ItemType,
   PlayerId,
 } from '../game/types'
+import { DICE_MAX, DICE_MIN } from '../game/constants'
 import {
   getPropertyTotalCost,
   getUpgradeCost,
@@ -14,23 +16,34 @@ import { BoardView } from './BoardView'
 import { GameIcon, PawnIcon } from './GameIcon'
 import { GameModal } from './GameModal'
 import { PlayerCard } from './PlayerCard'
+import { ShopModal } from './ShopModal'
 
 interface GameShellProps {
   state: GameState
   dispatch: Dispatch<GameAction>
   onRoll: () => void
-  onDrawShopItem: () => void
+  onUseRemoteDice: (value: number) => void
+  onAwardShopItem: (item: ItemType) => void
   onResolveEvent: (playerId: PlayerId) => void
+  onResetGame: () => void
   onReturnHome: () => void
+  isDiceAnimating: boolean
+  onDiceAnimationComplete: () => void
+  gameSessionId: number
 }
 
 export function GameShell({
   state,
   dispatch,
   onRoll,
-  onDrawShopItem,
+  onUseRemoteDice,
+  onAwardShopItem,
   onResolveEvent,
+  onResetGame,
   onReturnHome,
+  isDiceAnimating,
+  onDiceAnimationComplete,
+  gameSessionId,
 }: GameShellProps) {
   const playerOne = state.players[0]
   const playerTwo = state.players[1]
@@ -71,7 +84,7 @@ export function GameShell({
   }
 
   function resetGame() {
-    dispatch({ type: 'RESET' })
+    onResetGame()
   }
 
   function skipDecision() {
@@ -138,6 +151,7 @@ export function GameShell({
             state.phase !== 'gameOver' &&
             state.currentPlayerId === playerOne.id
           }
+          moneyResetKey={gameSessionId}
         />
 
         <div className="board-column">
@@ -147,6 +161,10 @@ export function GameShell({
             currentPlayer={currentPlayer}
             dispatch={dispatch}
             onRoll={onRoll}
+            isDiceAnimating={isDiceAnimating}
+            onDiceAnimationComplete={
+              onDiceAnimationComplete
+            }
           />
         </div>
 
@@ -157,6 +175,7 @@ export function GameShell({
             state.phase !== 'gameOver' &&
             state.currentPlayerId === playerTwo.id
           }
+          moneyResetKey={gameSessionId}
         />
       </div>
 
@@ -208,21 +227,10 @@ export function GameShell({
         )}
       </GameModal>
 
-      <GameModal
-        open={isHumanTurn && state.phase === 'awaitingShop'}
-        title="欢迎来到道具商店"
-        description="本次可以免费随机获得一件道具。"
-        icon={<GameIcon name="shop" />}
-        actions={
-          <button
-            className="primary-button"
-            type="button"
-            data-autofocus
-            onClick={onDrawShopItem}
-          >
-            抽取道具
-          </button>
-        }
+      <ShopModal
+        open={state.phase === 'awaitingShop'}
+        isAI={!isHumanTurn}
+        onAward={onAwardShopItem}
       />
 
       <GameModal
@@ -231,7 +239,7 @@ export function GameShell({
           state.phase === 'choosingRemoteDice'
         }
         title="选择遥控骰子点数"
-        description="选择 1–6 中的一个数字，棋子将精确移动对应格数。"
+        description="选择 1–12 中的一个数字，棋子将精确移动对应格数。"
         icon={<GameIcon name="remote" />}
         onCancel={() =>
           dispatch({ type: 'CANCEL_ITEM_USE' })
@@ -249,18 +257,16 @@ export function GameShell({
         }
       >
         <div className="number-picker">
-          {[1, 2, 3, 4, 5, 6].map((value) => (
+          {Array.from(
+            { length: DICE_MAX - DICE_MIN + 1 },
+            (_, index) => index + DICE_MIN,
+          ).map((value) => (
             <button
               className="number-button"
               type="button"
               key={value}
               data-autofocus={value === 1 ? true : undefined}
-              onClick={() =>
-                dispatch({
-                  type: 'USE_REMOTE_DICE',
-                  value,
-                })
-              }
+              onClick={() => onUseRemoteDice(value)}
             >
               {value}
             </button>

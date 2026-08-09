@@ -1,7 +1,4 @@
-import {
-  functionalIconSources,
-  type HouseTier,
-} from '../ui/visuals'
+import type { HouseTier } from '../ui/visuals'
 
 type GameIconName =
   | 'coin'
@@ -11,7 +8,7 @@ type GameIconName =
   | 'hospital'
   | 'bomb'
   | 'remote'
-  | 'shield'
+  | 'web'
   | 'start'
   | 'computer'
 
@@ -21,34 +18,11 @@ interface GameIconProps {
   title?: string
 }
 
-const rasterIcons = new Set([
-  'shop',
-  'event',
-  'jail',
-  'hospital',
-])
-
 export function GameIcon({
   name,
   className = '',
   title,
 }: GameIconProps) {
-  if (rasterIcons.has(name)) {
-    const source =
-      functionalIconSources[
-        name as keyof typeof functionalIconSources
-      ]
-
-    return (
-      <img
-        className={`game-icon game-icon--raster ${className}`}
-        src={source}
-        alt={title ?? ''}
-        aria-hidden={title ? undefined : true}
-      />
-    )
-  }
-
   return (
     <svg
       className={`game-icon ${className}`}
@@ -75,6 +49,86 @@ export function GameIcon({
             strokeLinecap="round"
             strokeWidth="4"
           />
+        </>
+      )}
+
+      {name === 'shop' && (
+        <>
+          <path
+            d="M10 26h44l-4-14H14Z"
+            fill="#fff8e8"
+            stroke="#243250"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+          <path
+            d="M14 27v28h36V27"
+            fill="#fff8e8"
+            stroke="#243250"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+          <path
+            d="M11 26c0 6 9 7 11 1 2 6 9 6 11 0 2 6 9 6 11 0 2 6 10 5 10-1"
+            fill="none"
+            stroke="#2e9d73"
+            strokeLinecap="round"
+            strokeWidth="6"
+          />
+          <path d="M28 41h8v14h-8Z" fill="#5bc994" />
+        </>
+      )}
+
+      {name === 'event' && (
+        <>
+          <path
+            d="M32 7c13 0 22 8 22 20 0 13-12 17-16 22H26c-4-5-16-9-16-22C10 15 19 7 32 7Z"
+            fill="#f5edff"
+            stroke="#342657"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+          <path
+            d="M24 24c1-6 5-9 10-9 6 0 10 3 10 8 0 7-8 8-10 14"
+            fill="none"
+            stroke="#8d63df"
+            strokeLinecap="round"
+            strokeWidth="6"
+          />
+          <circle cx="33" cy="47" r="3.5" fill="#8d63df" />
+        </>
+      )}
+
+      {name === 'jail' && (
+        <>
+          <rect
+            x="9"
+            y="8"
+            width="46"
+            height="48"
+            rx="7"
+            fill="#edf0f4"
+            stroke="#354052"
+            strokeWidth="4"
+          />
+          <path d="M19 10v44M32 10v44M45 10v44" stroke="#7b8493" strokeWidth="5" />
+          <path d="M9 20h46M9 46h46" stroke="#354052" strokeWidth="4" />
+          <circle cx="39" cy="34" r="4" fill="#354052" />
+        </>
+      )}
+
+      {name === 'hospital' && (
+        <>
+          <path
+            d="M12 13h40v43H12Z"
+            fill="#f7efff"
+            stroke="#342657"
+            strokeLinejoin="round"
+            strokeWidth="4"
+          />
+          <path d="M26 8h12v20H26Z" fill="#ffffff" stroke="#342657" strokeWidth="4" />
+          <path d="M32 12v12M26 18h12" stroke="#ef5f68" strokeLinecap="round" strokeWidth="5" />
+          <path d="M20 39h8v17h-8ZM36 39h8v17h-8Z" fill="#9c7be8" />
         </>
       )}
 
@@ -122,17 +176,18 @@ export function GameIcon({
         </>
       )}
 
-      {name === 'shield' && (
+      {name === 'web' && (
         <>
+          <circle cx="32" cy="32" r="25" fill="#f3edff" stroke="#342657" strokeWidth="3" />
+          <circle cx="32" cy="32" r="17" fill="none" stroke="#8d63df" strokeWidth="2.5" />
+          <circle cx="32" cy="32" r="9" fill="none" stroke="#8d63df" strokeWidth="2.5" />
           <path
-            d="M32 6 53 15v15c0 13-8 23-21 28C19 53 11 43 11 30V15Z"
-            fill="#9c7be8"
-            stroke="#33235a"
-            strokeLinejoin="round"
-            strokeWidth="4"
+            d="M32 7v50M7 32h50M14 14l36 36M50 14 14 50"
+            stroke="#8d63df"
+            strokeLinecap="round"
+            strokeWidth="2.5"
           />
-          <circle cx="32" cy="31" r="13" fill="none" stroke="#fff" strokeWidth="2.5" />
-          <path d="M32 18v26M19 31h26M23 22l18 18M41 22 23 40" stroke="#fff" strokeWidth="2" />
+          <circle cx="37" cy="27" r="3.5" fill="#342657" />
         </>
       )}
 

@@ -460,7 +460,7 @@ button:focus-visible,
   width: min(1230px, 100%);
   margin: 0 auto;
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(470px, 560px) minmax(180px, 220px);
+  grid-template-columns: minmax(180px, 220px) minmax(500px, 620px) minmax(180px, 220px);
   align-items: start;
   justify-content: center;
   gap: clamp(14px, 2vw, 28px);
@@ -578,6 +578,40 @@ button:focus-visible,
   font-size: 12px;
 }
 
+.animated-money {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.money-deltas {
+  position: absolute;
+  z-index: 12;
+  left: calc(100% + 7px);
+  top: 50%;
+  width: max-content;
+  pointer-events: none;
+}
+
+.money-delta {
+  --delta-order: 0;
+  position: absolute;
+  left: 0;
+  top: calc(-9px + var(--delta-order) * 15px);
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgb(17 26 48 / 88%);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 24%);
+  animation: money-delta-rise 800ms ease-out both;
+}
+
+.money-delta--positive { color: #70e5a9; }
+.money-delta--negative { color: #ff7d85; }
+
 .player-card__status {
   margin: 11px 0;
   display: flex;
@@ -643,7 +677,7 @@ button:focus-visible,
 /* Board */
 
 .game-board {
-  --tile-size: clamp(39px, 3.6vw, 48px);
+  --tile-size: clamp(50px, 4vw, 58px);
   --tile-gap: 4px;
   position: relative;
   width: calc(var(--tile-size) * 9 + var(--tile-gap) * 8 + 24px);
@@ -843,7 +877,7 @@ button:focus-visible,
 /* Action dock */
 
 .action-dock {
-  width: min(100%, 520px);
+  width: 100%;
   min-height: 106px;
   padding: 10px 12px;
   display: grid;
@@ -1106,6 +1140,81 @@ button:focus-visible,
   gap: 7px;
 }
 
+/* Shop */
+
+.shop-modal {
+  width: min(680px, 100%);
+  animation: shop-modal-in 220ms cubic-bezier(.22, 1.24, .42, 1) both;
+}
+
+.shop-modal--exiting {
+  animation: shop-modal-out 180ms cubic-bezier(.55, 0, .85, .45) both;
+  pointer-events: none;
+}
+
+.shop-item-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.shop-item-card {
+  min-width: 0;
+  min-height: 178px;
+  padding: 14px 11px 12px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 7px;
+  border: 2px solid #d6dae3;
+  border-radius: 17px;
+  background: linear-gradient(160deg, #ffffff, #eceff3);
+  color: var(--ink);
+  box-shadow: inset 0 1px #ffffff;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease;
+}
+
+.shop-item-card--selected {
+  border-color: #e2a51c;
+  background: linear-gradient(160deg, #fffdf5, #ffe29a);
+  box-shadow:
+    0 0 0 4px rgb(247 191 63 / 22%),
+    0 12px 26px rgb(160 104 13 / 19%);
+  transform: scale(1.045);
+}
+
+.shop-item-card__icon {
+  width: 66px;
+  height: 66px;
+  padding: 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgb(255 255 255 / 72%);
+}
+
+.shop-item-card strong { font-size: 15px; }
+
+.shop-item-card small {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.shop-result {
+  min-height: 18px;
+  margin: 12px 0 0;
+  color: var(--gold-dark);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.shop-confirm { min-width: 138px; }
+
 .number-button {
   aspect-ratio: 1;
   border: 2px solid #d8dce5;
@@ -1165,6 +1274,24 @@ button:focus-visible,
 
 @keyframes modal-in {
   from { opacity: 0; transform: scale(.92) translateY(12px); }
+}
+
+@keyframes shop-modal-in {
+  from { opacity: 0; transform: translateY(16px) scale(.94); }
+  72% { transform: translateY(-3px) scale(1.012); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes shop-modal-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(18px) scale(.93); }
+}
+
+@keyframes money-delta-rise {
+  0% { opacity: 0; transform: translateY(7px) scale(.92); }
+  18% { opacity: 1; transform: translateY(0) scale(1); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-24px) scale(.96); }
 }
 
 @media (hover: hover) {
@@ -1439,14 +1566,48 @@ button:focus-visible,
   .game-modal h2 { font-size: 18px; }
   .modal-description { font-size: 11px; }
   .number-picker { gap: 4px; }
+  .number-picker { grid-template-columns: repeat(4, 1fr); }
   .number-button { border-radius: 8px; }
+
+  .shop-modal { padding-top: 57px; }
+  .shop-item-grid { gap: 5px; }
+  .shop-item-card {
+    min-height: 106px;
+    padding: 8px 4px;
+    gap: 4px;
+    border-radius: 11px;
+  }
+  .shop-item-card__icon {
+    width: 43px;
+    height: 43px;
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .shop-item-card strong { font-size: 11px; }
+  .shop-item-card small { display: none; }
+  .shop-result { margin-top: 8px; font-size: 9px; }
 }
 
-@media (max-height: 740px) and (min-width: 800px) {
-  .game-screen { padding-top: 5px; }
+@media (max-height: 740px) and (min-width: 1041px) {
+  .game-screen {
+    height: 100vh;
+    min-height: 0;
+    overflow: hidden;
+    padding-top: 5px;
+    padding-bottom: 5px;
+  }
   .game-topbar { height: 42px; margin-bottom: 4px; }
-  .game-board { --tile-size: 42px; --tile-gap: 3px; padding: 9px; }
-  .action-dock { min-height: 92px; }
+  .game-board { --tile-size: 51px; --tile-gap: 3px; padding: 9px; }
+  .board-column { gap: 6px; }
+  .action-dock {
+    height: 82px;
+    min-height: 0;
+    padding: 5px 10px;
+    grid-template-rows: 46px 18px;
+    gap: 3px 10px;
+  }
+  .dice-view { width: 46px; height: 46px; border-radius: 11px; }
+  .activity-feed { height: 18px; padding: 3px 8px 3px 22px; }
   .player-card { padding: 13px; }
 }
 
@@ -1459,4 +1620,14 @@ button:focus-visible,
     animation-iteration-count: 1 !important;
     transition-duration: .01ms !important;
   }
+
+  .money-delta {
+    animation-name: money-delta-fade;
+    transform: none;
+  }
+}
+
+@keyframes money-delta-fade {
+  from { opacity: 1; }
+  to { opacity: 0; }
 }

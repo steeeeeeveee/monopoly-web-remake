@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useReducer,
   useState,
@@ -11,21 +12,23 @@ import {
   createInitialGameState,
   gameReducer,
 } from './game/gameReducer'
+import {
+  getRandomDiceValue,
+  MOVE_STEP_DURATION_MS,
+} from './game/constants'
 import type {
+  GameAction,
   GameMode,
   ItemType,
   PlayerId,
 } from './game/types'
 import './App.css'
 
-const shopItems: ItemType[] = [
-  'bomb',
-  'remote',
-  'shield',
-]
-
 function App() {
   const [gameStarted, setGameStarted] = useState(false)
+  const [gameSessionId, setGameSessionId] = useState(0)
+  const [isDiceAnimating, setIsDiceAnimating] =
+    useState(false)
   const [gameState, dispatch] = useReducer(
     gameReducer,
     createInitialGameState(),
@@ -34,14 +37,15 @@ function App() {
   useEffect(() => {
     if (
       !gameStarted ||
-      gameState.phase !== 'moving'
+      gameState.phase !== 'moving' ||
+      isDiceAnimating
     ) {
       return
     }
 
     const timerId = window.setTimeout(() => {
       dispatch({ type: 'MOVE_ONE_STEP' })
-    }, 300)
+    }, MOVE_STEP_DURATION_MS)
 
     return () => {
       window.clearTimeout(timerId)
@@ -50,7 +54,26 @@ function App() {
     gameStarted,
     gameState.phase,
     gameState.movementQueue,
+    isDiceAnimating,
   ])
+
+  const dispatchWithAnimation = useCallback(
+    (action: GameAction) => {
+      if (
+        action.type === 'ROLL' ||
+        action.type === 'USE_REMOTE_DICE'
+      ) {
+        setIsDiceAnimating(true)
+      }
+
+      dispatch(action)
+    },
+    [],
+  )
+
+  const finishDiceAnimation = useCallback(() => {
+    setIsDiceAnimating(false)
+  }, [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -80,9 +103,9 @@ function App() {
         gameState.phase === 'waitingForRoll'
       ) {
         event.preventDefault()
-        dispatch({
+        dispatchWithAnimation({
           type: 'ROLL',
-          value: Math.floor(Math.random() * 6) + 1,
+          value: getRandomDiceValue(),
         })
       }
 
@@ -109,7 +132,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [gameStarted, gameState])
+  }, [dispatchWithAnimation, gameStarted, gameState])
 
   useEffect(() => {
     if (!gameStarted) return
@@ -122,6 +145,7 @@ function App() {
     if (
       !aiPlayer?.isAI ||
       gameState.phase === 'moving' ||
+      gameState.phase === 'awaitingShop' ||
       gameState.phase === 'gameOver'
     ) {
       return
@@ -130,40 +154,50 @@ function App() {
     const timerId = window.setTimeout(() => {
       const action = getAIAction(gameState)
 
-      if (action) dispatch(action)
+      if (action) dispatchWithAnimation(action)
     }, 650)
 
     return () => {
       window.clearTimeout(timerId)
     }
-  }, [gameStarted, gameState])
+  }, [dispatchWithAnimation, gameStarted, gameState])
 
   function startGame(mode: GameMode) {
     dispatch({ type: 'RESET', mode })
+    setGameSessionId((current) => current + 1)
+    setIsDiceAnimating(false)
     setGameStarted(true)
   }
 
   function returnHome() {
     dispatch({ type: 'RESET' })
+    setGameSessionId((current) => current + 1)
+    setIsDiceAnimating(false)
     setGameStarted(false)
   }
 
   function rollDice() {
-    dispatch({
+    dispatchWithAnimation({
       type: 'ROLL',
-      value: Math.floor(Math.random() * 6) + 1,
+      value: getRandomDiceValue(),
     })
   }
 
-  function drawShopItem() {
-    const item =
-      shopItems[
-        Math.floor(Math.random() * shopItems.length)
-      ]
+  function useRemoteDice(value: number) {
+    dispatchWithAnimation({
+      type: 'USE_REMOTE_DICE',
+      value,
+    })
+  }
 
-    if (item) {
-      dispatch({ type: 'RECEIVE_SHOP_ITEM', item })
-    }
+  function awardShopItem(item: ItemType) {
+    dispatch({ type: 'RECEIVE_SHOP_ITEM', item })
+  }
+
+  function resetGame() {
+    dispatch({ type: 'RESET' })
+    setGameSessionId((current) => current + 1)
+    setIsDiceAnimating(false)
   }
 
   function resolveRandomEvent(targetId: PlayerId) {
@@ -179,9 +213,14 @@ function App() {
       state={gameState}
       dispatch={dispatch}
       onRoll={rollDice}
-      onDrawShopItem={drawShopItem}
+      onUseRemoteDice={useRemoteDice}
+      onAwardShopItem={awardShopItem}
       onResolveEvent={resolveRandomEvent}
+      onResetGame={resetGame}
       onReturnHome={returnHome}
+      isDiceAnimating={isDiceAnimating}
+      onDiceAnimationComplete={finishDiceAnimation}
+      gameSessionId={gameSessionId}
     />
   )
 }

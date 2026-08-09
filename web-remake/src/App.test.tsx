@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -11,6 +12,7 @@ import App from './App'
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.useRealTimers()
 })
 
 async function enterLocalGame(
@@ -78,7 +80,7 @@ describe('大富翁页面', () => {
   it('掷骰、移动、购买和重新开始的页面状态正确', async () => {
     const user = userEvent.setup()
 
-    vi.spyOn(Math, 'random').mockReturnValue(0.2)
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
 
     render(<App />)
     await enterLocalGame(user)
@@ -115,7 +117,9 @@ describe('大富翁页面', () => {
 
     await user.click(buyButton)
 
-    expect(screen.getByText('¥ 4000')).toBeInTheDocument()
+    expect(
+      await screen.findByText('¥ 4000'),
+    ).toBeInTheDocument()
     expect(screen.getAllByText('¥ 5000')).toHaveLength(1)
 
     await user.click(
@@ -131,7 +135,7 @@ describe('大富翁页面', () => {
   it('支持 R 掷骰和 Escape 跳过', async () => {
     const user = userEvent.setup()
 
-    vi.spyOn(Math, 'random').mockReturnValue(0.2)
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
 
     render(<App />)
     await enterLocalGame(user)
@@ -164,6 +168,42 @@ describe('大富翁页面', () => {
       }),
     ).toBeEnabled()
   })
+
+  it('骰子动画结束前不会移动棋子', () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
+
+    render(<App />)
+    fireEvent.click(
+      screen.getByRole('button', { name: '双人同屏' }),
+    )
+
+    act(() => {
+      vi.advanceTimersByTime(250)
+    })
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '掷骰子' }),
+    )
+
+    act(() => {
+      vi.advanceTimersByTime(419)
+    })
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    act(() => {
+      vi.advanceTimersByTime(279)
+    })
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(screen.getByText('第 1 格')).toBeInTheDocument()
+  })
 })
 
 describe('焦点管理', () => {
@@ -190,7 +230,7 @@ describe('焦点管理', () => {
   it('根据游戏阶段自动选中正确按钮', async () => {
     const user = userEvent.setup()
 
-    vi.spyOn(Math, 'random').mockReturnValue(0.2)
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
 
     render(<App />)
     await enterLocalGame(user)

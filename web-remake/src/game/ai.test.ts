@@ -19,8 +19,35 @@ describe('电脑玩家', () => {
 
     expect(action).toEqual({
       type: 'ROLL',
-      value: 4,
+      value: 7,
     })
+  })
+
+  it('普通骰子和遥控骰子都能使用 1–12', () => {
+    expect(
+      getAIAction(createAITurnState(), () => 0),
+    ).toEqual({ type: 'ROLL', value: 1 })
+    expect(
+      getAIAction(createAITurnState(), () => 0.999999),
+    ).toEqual({ type: 'ROLL', value: 12 })
+
+    const remoteState: GameState = {
+      ...createAITurnState(),
+      phase: 'choosingRemoteDice',
+    }
+    expect(getAIAction(remoteState, () => 0.999999)).toEqual({
+      type: 'USE_REMOTE_DICE',
+      value: 12,
+    })
+  })
+
+  it('商店阶段交给商店弹窗处理，不会重复发奖', () => {
+    const state: GameState = {
+      ...createAITurnState(),
+      phase: 'awaitingShop',
+    }
+
+    expect(getAIAction(state)).toBeNull()
   })
 
   it('资金足够时购买地产，资金不足时跳过', () => {

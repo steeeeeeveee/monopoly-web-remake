@@ -9,7 +9,7 @@ export type VisualAssetKey =
   | 'hospital'
   | 'bomb'
   | 'remote'
-  | 'shield'
+  | 'web'
 
 export type HouseTier =
   | 'small'

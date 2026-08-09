@@ -1,4 +1,5 @@
 import { boardTiles } from './board'
+import { DICE_MAX, DICE_MIN } from './constants'
 import type {
   GameAction,
   GameMode,
@@ -121,7 +122,7 @@ function createPlayers(mode: GameMode): Player[] {
       items: {
         bomb: 0,
         remote: 0,
-        shield: 0,
+        web: 0,
       },
       confusedTurns: 0,
       hasForcedAcquisition: false,
@@ -139,7 +140,7 @@ function createPlayers(mode: GameMode): Player[] {
       items: {
         bomb: 0,
         remote: 0,
-        shield: 0,
+        web: 0,
       },
       confusedTurns: 0,
       hasForcedAcquisition: false,
@@ -162,7 +163,7 @@ function createTileEffects() {
   return boardTiles.map((tile) => ({
     tileIndex: tile.index,
     hasBomb: false,
-    hasShield: false,
+    hasWeb: false,
   }))
 }
 
@@ -616,8 +617,8 @@ export function gameReducer(
 
       if (
         !Number.isInteger(action.value) ||
-        action.value < 1 ||
-        action.value > 6
+        action.value < DICE_MIN ||
+        action.value > DICE_MAX
       ) {
         return state
       }
@@ -728,13 +729,13 @@ export function gameReducer(
           effect.tileIndex === nextPosition,
       )
 
-      if (tileEffect?.hasShield) {
+      if (tileEffect?.hasWeb) {
         const tileEffects = state.tileEffects.map(
           (effect) =>
             effect.tileIndex === nextPosition
               ? {
                   ...effect,
-                  hasShield: false,
+                  hasWeb: false,
                 }
               : effect,
         )
@@ -941,7 +942,7 @@ export function gameReducer(
       const itemNames = {
         bomb: '炸弹',
         remote: '遥控骰子',
-        shield: '蛛网',
+        web: '蛛网',
       }
 
       return finishTurn({
@@ -1007,7 +1008,7 @@ export function gameReducer(
         !tileEffect ||
         currentPlayer.items[item] <= 0 ||
         (item === 'bomb' && tileEffect.hasBomb) ||
-        (item === 'shield' && tileEffect.hasShield)
+        (item === 'web' && tileEffect.hasWeb)
       ) {
         return state
       }
@@ -1033,10 +1034,10 @@ export function gameReducer(
                   item === 'bomb'
                     ? true
                     : effect.hasBomb,
-                hasShield:
-                  item === 'shield'
+                hasWeb:
+                  item === 'web'
                     ? true
-                    : effect.hasShield,
+                    : effect.hasWeb,
               }
             : effect,
       )
@@ -1084,8 +1085,8 @@ export function gameReducer(
       if (
         state.phase !== 'choosingRemoteDice' ||
         !Number.isInteger(action.value) ||
-        action.value < 1 ||
-        action.value > 6
+        action.value < DICE_MIN ||
+        action.value > DICE_MAX
       ) {
         return state
       }

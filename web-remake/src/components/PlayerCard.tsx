@@ -1,11 +1,13 @@
 import type { CSSProperties } from 'react'
 import type { Player, PlayerInventory } from '../game/types'
+import { AnimatedMoney } from './AnimatedMoney'
 import { GameIcon, PawnIcon } from './GameIcon'
 
 interface PlayerCardProps {
   player: Player
   propertyCount: number
   isActive: boolean
+  moneyResetKey: number
 }
 
 interface InventoryItemProps {
@@ -34,6 +36,7 @@ export function PlayerCard({
   player,
   propertyCount,
   isActive,
+  moneyResetKey,
 }: PlayerCardProps) {
   const statusText = player.bankrupt
     ? '已破产'
@@ -70,7 +73,10 @@ export function PlayerCard({
       <div className="player-stats">
         <div>
           <span>金币</span>
-          <strong>¥ {player.money}</strong>
+          <AnimatedMoney
+            value={player.money}
+            resetKey={moneyResetKey}
+          />
         </div>
         <div>
           <span>位置</span>
@@ -105,8 +111,8 @@ export function PlayerCard({
           label="遥控骰子"
         />
         <InventoryItem
-          type="shield"
-          count={player.items.shield}
+          type="web"
+          count={player.items.web}
           label="蛛网"
         />
       </div>

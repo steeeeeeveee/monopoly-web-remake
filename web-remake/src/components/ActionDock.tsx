@@ -16,6 +16,8 @@ interface ActionDockProps {
   currentPlayer: Player
   dispatch: Dispatch<GameAction>
   onRoll: () => void
+  isDiceAnimating: boolean
+  onDiceAnimationComplete: () => void
 }
 
 export function ActionDock({
@@ -23,6 +25,8 @@ export function ActionDock({
   currentPlayer,
   dispatch,
   onRoll,
+  isDiceAnimating,
+  onDiceAnimationComplete,
 }: ActionDockProps) {
   const rollButtonRef = useRef<HTMLButtonElement>(null)
   const isAITurn = currentPlayer.isAI
@@ -69,7 +73,8 @@ export function ActionDock({
 
       <DiceView
         value={state.diceValue}
-        isRolling={state.phase === 'moving'}
+        isRolling={isDiceAnimating}
+        onAnimationComplete={onDiceAnimationComplete}
       />
 
       <div className="primary-actions">
@@ -118,20 +123,20 @@ export function ActionDock({
                   <span>×{currentPlayer.items.remote}</span>
                 </button>
               )}
-              {currentPlayer.items.shield > 0 && (
+              {currentPlayer.items.web > 0 && (
                 <button
                   className="icon-action"
                   type="button"
                   onClick={() =>
                     dispatch({
                       type: 'START_ITEM_PLACEMENT',
-                      item: 'shield',
+                      item: 'web',
                     })
                   }
                   title="使用蛛网"
                 >
-                  <GameIcon name="shield" />
-                  <span>×{currentPlayer.items.shield}</span>
+                  <GameIcon name="web" />
+                  <span>×{currentPlayer.items.web}</span>
                 </button>
               )}
             </div>
