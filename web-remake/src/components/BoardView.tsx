@@ -1,5 +1,12 @@
-import type { CSSProperties, Dispatch } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  type CSSProperties,
+  type Dispatch,
+} from 'react'
 import { boardTiles, type TileKind } from '../game/board'
+import { MOVE_STEP_DURATION_MS } from '../game/constants'
 import {
   getPropertyRent,
   getRent,
@@ -7,7 +14,15 @@ import {
 import type {
   GameAction,
   GameState,
+  Player,
+  PlayerId,
 } from '../game/types'
+import {
+  METEOR_EFFECT_DURATION_MS,
+  REDUCED_METEOR_EFFECT_DURATION_MS,
+  type BoardEffect,
+} from '../ui/boardEffects'
+import { getPawnLayout } from '../ui/pawnLayout'
 import { getHouseTier } from '../ui/visuals'
 import {
   GameIcon,
@@ -18,6 +33,10 @@ import {
 interface BoardViewProps {
   state: GameState
   dispatch: Dispatch<GameAction>
+  isDiceAnimating: boolean
+  onMoveStepComplete: () => void
+  boardEffect: BoardEffect | null
+  onBoardEffectComplete: (effectId: number) => void
 }
 
 function getTileIcon(kind: TileKind) {
@@ -25,14 +44,181 @@ function getTileIcon(kind: TileKind) {
   if (kind === 'shop') return <GameIcon name="shop" />
   if (kind === 'event') return <GameIcon name="event" />
   if (kind === 'jail') return <GameIcon name="jail" />
-  if (kind === 'function') return <GameIcon name="hospital" />
+  if (kind === 'hospital') return <GameIcon name="hospital" />
   if (kind === 'start') return <GameIcon name="start" />
   return null
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    window.matchMedia?.('(prefers-reduced-motion: reduce)')
+      .matches ?? false
+  )
+}
+
+function getPlayersOnTile(
+  players: Player[],
+  tileIndex: number,
+): Player[] {
+  return players
+    .filter(
+      (player) =>
+        !player.bankrupt && player.position === tileIndex,
+    )
+    .sort((left, right) => left.id - right.id)
+}
+
+function getPlayerLayout(
+  players: Player[],
+  playerId: PlayerId,
+) {
+  const player = players.find(
+    (candidate) => candidate.id === playerId,
+  )
+
+  if (!player) return getPawnLayout(1, 0)
+
+  const tilePlayers = getPlayersOnTile(
+    players,
+    player.position,
+  )
+  const playerIndex = Math.max(
+    0,
+    tilePlayers.findIndex(
+      (candidate) => candidate.id === playerId,
+    ),
+  )
+
+  return getPawnLayout(tilePlayers.length, playerIndex)
+}
+
+function pawnTitle(player: Player): string {
+  if (!player.inJail) return `${player.name}的棋子`
+
+  return player.position === 35
+    ? `${player.name}的棋子，正在医院住院`
+    : `${player.name}的棋子，正在监狱中`
+}
+
+interface PawnStatusBadgesProps {
+  player: Player
+  showMovingConfusion: boolean
+}
+
+function PawnStatusBadges({
+  player,
+  showMovingConfusion,
+}: PawnStatusBadgesProps) {
+  const showConfusion =
+    player.confusedTurns > 0 || showMovingConfusion
+
+  if (!showConfusion && !player.hasForcedAcquisition) {
+    return null
+  }
+
+  return (
+    <span className="pawn-status-badges" aria-hidden="true">
+      {showConfusion && (
+        <span className="pawn-status-badge pawn-status-badge--dizzy">
+          <GameIcon name="dizzy" />
+        </span>
+      )}
+      {player.hasForcedAcquisition && (
+        <span className="pawn-status-badge pawn-status-badge--acquisition">
+          <GameIcon name="acquisition" />
+        </span>
+      )}
+    </span>
+  )
+}
+
+function createJumpKeyframes(
+  deltaX: number,
+  deltaY: number,
+  jumpHeight: number,
+  targetScale: number,
+): Keyframe[] {
+  const transform = (
+    travel: number,
+    arc: number,
+    scaleX: number,
+    scaleY: number,
+    rotation: number,
+  ) => ({
+    transform: `translate(-50%, -50%) translate(${deltaX * travel}px, ${
+      deltaY * travel - arc
+    }px) rotate(${rotation}deg) scale(${scaleX}, ${scaleY})`,
+  })
+  const tilt = Math.abs(deltaX) >= Math.abs(deltaY)
+    ? Math.sign(deltaX) || 1
+    : -(Math.sign(deltaY) || 1)
+
+  return [
+    { ...transform(0, 0, 1, 1, 0), offset: 0 },
+    {
+      ...transform(0, 0, 1.1, 0.86, -tilt * 2),
+      offset: 0.16,
+    },
+    {
+      ...transform(
+        0.32,
+        jumpHeight * 0.86,
+        0.97,
+        1.07,
+        tilt * 3.4,
+      ),
+      offset: 0.38,
+    },
+    {
+      ...transform(
+        0.68,
+        jumpHeight * 0.86,
+        0.96 * targetScale,
+        1.08 * targetScale,
+        tilt * 3.4,
+      ),
+      offset: 0.6,
+    },
+    {
+      ...transform(
+        1,
+        0,
+        targetScale,
+        targetScale,
+        0,
+      ),
+      offset: 0.82,
+    },
+    {
+      ...transform(
+        1,
+        0,
+        targetScale * 1.08,
+        targetScale * 0.86,
+        0,
+      ),
+      offset: 0.9,
+    },
+    {
+      ...transform(
+        1,
+        0,
+        targetScale,
+        targetScale,
+        0,
+      ),
+      offset: 1,
+    },
+  ]
 }
 
 export function BoardView({
   state,
   dispatch,
+  isDiceAnimating,
+  onMoveStepComplete,
+  boardEffect,
+  onBoardEffectComplete,
 }: BoardViewProps) {
   const currentPlayer = state.players.find(
     (player) => player.id === state.currentPlayerId,
@@ -40,6 +226,202 @@ export function BoardView({
   const canPlace =
     state.phase === 'placingItem' &&
     !currentPlayer?.isAI
+  const tileRefs = useRef(new Map<number, HTMLDivElement>())
+  const pawnRefs = useRef(new Map<PlayerId, HTMLSpanElement>())
+  const activeMoveKeyRef = useRef<string | null>(null)
+  const moveAnimationsRef = useRef<Animation[]>([])
+  const moveTimerRef = useRef<number | null>(null)
+  const effectTimerRef = useRef<number | null>(null)
+
+  const activePlayers = useMemo(
+    () =>
+      state.players.filter((player) => !player.bankrupt),
+    [state.players],
+  )
+
+  useEffect(() => {
+    if (
+      state.phase !== 'moving' ||
+      isDiceAnimating ||
+      !currentPlayer ||
+      state.movementQueue.length === 0
+    ) {
+      return
+    }
+
+    const nextPosition = state.movementQueue[0]
+    if (nextPosition === undefined) return
+
+    const moveKey = `${currentPlayer.id}:${currentPlayer.position}:${nextPosition}:${state.movementQueue.length}`
+    if (activeMoveKeyRef.current === moveKey) return
+    activeMoveKeyRef.current = moveKey
+
+    const completeStep = () => {
+      if (activeMoveKeyRef.current !== moveKey) return
+      activeMoveKeyRef.current = null
+      onMoveStepComplete()
+    }
+
+    if (prefersReducedMotion()) {
+      moveTimerRef.current = window.setTimeout(completeStep, 0)
+      return () => {
+        if (moveTimerRef.current !== null) {
+          window.clearTimeout(moveTimerRef.current)
+          moveTimerRef.current = null
+        }
+        if (activeMoveKeyRef.current === moveKey) {
+          activeMoveKeyRef.current = null
+        }
+      }
+    }
+
+    const movingPawn = pawnRefs.current.get(currentPlayer.id)
+    const targetTile = tileRefs.current.get(nextPosition)
+
+    if (!movingPawn || !targetTile || !movingPawn.animate) {
+      moveTimerRef.current = window.setTimeout(
+        completeStep,
+        MOVE_STEP_DURATION_MS,
+      )
+      return () => {
+        if (moveTimerRef.current !== null) {
+          window.clearTimeout(moveTimerRef.current)
+          moveTimerRef.current = null
+        }
+        if (activeMoveKeyRef.current === moveKey) {
+          activeMoveKeyRef.current = null
+        }
+      }
+    }
+
+    const projectedPlayers = state.players.map((player) =>
+      player.id === currentPlayer.id
+        ? { ...player, position: nextPosition }
+        : player,
+    )
+    const sourcePosition = currentPlayer.position
+    const affectedPlayers = projectedPlayers.filter(
+      (player) =>
+        !player.bankrupt &&
+        (player.id === currentPlayer.id ||
+          player.position === nextPosition ||
+          player.position === sourcePosition),
+    )
+
+    for (const player of affectedPlayers) {
+      const pawn = pawnRefs.current.get(player.id)
+      const destinationTile = tileRefs.current.get(
+        player.position,
+      )
+      if (!pawn || !destinationTile) continue
+
+      const pawnRect = pawn.getBoundingClientRect()
+      const tileRect = destinationTile.getBoundingClientRect()
+      const layout = getPlayerLayout(
+        projectedPlayers,
+        player.id,
+      )
+      const targetCenterX =
+        tileRect.left +
+        tileRect.width * (layout.centerXPercent / 100)
+      const targetCenterY =
+        tileRect.top +
+        tileRect.height * (layout.centerYPercent / 100)
+      const currentCenterX = pawnRect.left + pawnRect.width / 2
+      const currentCenterY = pawnRect.top + pawnRect.height / 2
+      const deltaX = targetCenterX - currentCenterX
+      const deltaY = targetCenterY - currentCenterY
+      const targetSize =
+        Math.min(tileRect.width, tileRect.height) *
+        (layout.sizePercent / 100)
+      const targetScale = pawnRect.width > 0
+        ? targetSize / pawnRect.width
+        : 1
+
+      const animation = player.id === currentPlayer.id
+        ? pawn.animate(
+            createJumpKeyframes(
+              deltaX,
+              deltaY,
+              Math.min(tileRect.width, tileRect.height) * 0.55,
+              targetScale,
+            ),
+            {
+              duration: MOVE_STEP_DURATION_MS,
+              easing: 'linear',
+              fill: 'forwards',
+            },
+          )
+        : pawn.animate(
+            [
+              {
+                transform:
+                  'translate(-50%, -50%) translate(0, 0) scale(1)',
+              },
+              {
+                transform: `translate(-50%, -50%) translate(${deltaX}px, ${deltaY}px) scale(${targetScale})`,
+              },
+            ],
+            {
+              duration: MOVE_STEP_DURATION_MS,
+              easing: 'cubic-bezier(.22,.8,.35,1)',
+              fill: 'forwards',
+            },
+          )
+
+      moveAnimationsRef.current.push(animation)
+
+      if (player.id === currentPlayer.id) {
+        void animation.finished
+          .then(completeStep)
+          .catch(() => undefined)
+      }
+    }
+
+    return () => {
+      for (const animation of moveAnimationsRef.current) {
+        animation.cancel()
+      }
+      moveAnimationsRef.current = []
+      if (activeMoveKeyRef.current === moveKey) {
+        activeMoveKeyRef.current = null
+      }
+    }
+  }, [
+    currentPlayer,
+    isDiceAnimating,
+    onMoveStepComplete,
+    state.movementQueue,
+    state.phase,
+    state.players,
+  ])
+
+  useEffect(() => {
+    if (!boardEffect) return
+
+    const duration = prefersReducedMotion()
+      ? REDUCED_METEOR_EFFECT_DURATION_MS
+      : METEOR_EFFECT_DURATION_MS
+    const effectId = boardEffect.id
+
+    effectTimerRef.current = window.setTimeout(() => {
+      effectTimerRef.current = null
+      onBoardEffectComplete(effectId)
+    }, duration)
+
+    return () => {
+      if (effectTimerRef.current !== null) {
+        window.clearTimeout(effectTimerRef.current)
+        effectTimerRef.current = null
+      }
+    }
+  }, [boardEffect, onBoardEffectComplete])
+
+  const effectTile = boardEffect
+    ? boardTiles.find(
+        (tile) => tile.index === boardEffect.tileIndex,
+      )
+    : null
 
   return (
     <section className="game-board" aria-label="大富翁棋盘">
@@ -91,8 +473,17 @@ export function BoardView({
               owner ? 'board-tile--owned' : ''
             } ${hasNeighborBonus ? 'board-tile--linked' : ''} ${
               canPlace ? 'board-tile--selectable' : ''
-            } ${placementBlocked ? 'board-tile--blocked' : ''}`}
+            } ${placementBlocked ? 'board-tile--blocked' : ''} ${
+              boardEffect?.tileIndex === tile.index
+                ? 'board-tile--meteor-target'
+                : ''
+            }`}
             key={tile.index}
+            ref={(element) => {
+              if (element) tileRefs.current.set(tile.index, element)
+              else tileRefs.current.delete(tile.index)
+            }}
+            data-tile-index={tile.index}
             style={tileStyle}
             title={title}
             role={canPlace ? 'button' : undefined}
@@ -150,24 +541,6 @@ export function BoardView({
                 )}
               </span>
             )}
-
-            <span className="tile-pieces">
-              {state.players
-                .filter(
-                  (player) =>
-                    !player.bankrupt &&
-                    player.position === tile.index,
-                )
-                .map((player) => (
-                  <PawnIcon
-                    key={player.id}
-                    color={player.color}
-                    title={`${player.name}的棋子${
-                      player.inJail ? '，正在监狱中' : ''
-                    }`}
-                  />
-                ))}
-            </span>
           </div>
         )
       })}
@@ -177,6 +550,86 @@ export function BoardView({
         <strong>财富之路</strong>
         <small>52 TILE EDITION</small>
       </div>
+
+      <div className="pawn-layer">
+        {activePlayers.map((player) => {
+          const tile = boardTiles[player.position]
+          if (!tile) return null
+
+          const layout = getPlayerLayout(
+            state.players,
+            player.id,
+          )
+          const style = {
+            gridColumn: tile.column,
+            gridRow: tile.row,
+            '--pawn-size': `${layout.sizePercent}%`,
+            '--pawn-x': `${layout.centerXPercent}%`,
+            '--pawn-y': `${layout.centerYPercent}%`,
+          } as CSSProperties
+          const showMovingConfusion =
+            state.phase === 'moving' &&
+            state.currentPlayerId === player.id &&
+            state.movementDirection === -1
+
+          return (
+            <span
+              className="pawn-slot"
+              key={player.id}
+              style={style}
+            >
+              <span
+                className="pawn-motion"
+                ref={(element) => {
+                  if (element) {
+                    pawnRefs.current.set(player.id, element)
+                  } else {
+                    pawnRefs.current.delete(player.id)
+                  }
+                }}
+                data-player-id={player.id}
+              >
+                <PawnStatusBadges
+                  player={player}
+                  showMovingConfusion={showMovingConfusion}
+                />
+                <PawnIcon
+                  color={player.color}
+                  title={pawnTitle(player)}
+                />
+              </span>
+            </span>
+          )
+        })}
+      </div>
+
+      {boardEffect && effectTile && (
+        <div
+          className="board-effect-layer"
+          role="status"
+          aria-label="炸弹正在摧毁地产"
+        >
+          <span
+            className="meteor-effect"
+            style={{
+              gridColumn: effectTile.column,
+              gridRow: effectTile.row,
+            }}
+          >
+            <span className="meteor-effect__shadow" />
+            <span className="meteor-effect__bomb">
+              <GameIcon name="bomb" />
+            </span>
+            <span className="meteor-effect__flash" />
+            <span className="meteor-effect__ring" />
+            <span className="meteor-effect__smoke meteor-effect__smoke--one" />
+            <span className="meteor-effect__smoke meteor-effect__smoke--two" />
+            <span className="meteor-effect__debris meteor-effect__debris--one" />
+            <span className="meteor-effect__debris meteor-effect__debris--two" />
+            <span className="meteor-effect__debris meteor-effect__debris--three" />
+          </span>
+        </div>
+      )}
     </section>
   )
 }

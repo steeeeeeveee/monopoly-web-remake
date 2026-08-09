@@ -308,7 +308,7 @@ button:focus-visible,
 .mini-tile--gold { background: var(--gold); }
 .mini-tile--shop { background: var(--green); }
 .mini-tile--event,
-.mini-tile--function { background: var(--purple); }
+.mini-tile--hospital { background: #e8f7ff; }
 .mini-tile--jail { background: var(--gray); }
 .mini-tile--start { background: var(--red); }
 
@@ -582,7 +582,14 @@ button:focus-visible,
   position: relative;
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   font-variant-numeric: tabular-nums;
+}
+
+.animated-money > .game-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
 }
 
 .money-deltas {
@@ -596,12 +603,16 @@ button:focus-visible,
 
 .money-delta {
   --delta-order: 0;
+  --money-delta-color: #ffffff;
+  --money-delta-background: rgb(17 26 48 / 94%);
   position: absolute;
   left: 0;
   top: calc(-9px + var(--delta-order) * 15px);
   padding: 2px 5px;
   border-radius: 999px;
-  background: rgb(17 26 48 / 88%);
+  background: var(--money-delta-background);
+  color: var(--money-delta-color) !important;
+  -webkit-text-fill-color: var(--money-delta-color);
   font-size: 11px;
   font-weight: 900;
   line-height: 1.2;
@@ -609,8 +620,15 @@ button:focus-visible,
   animation: money-delta-rise 800ms ease-out both;
 }
 
-.money-delta--positive { color: #70e5a9; }
-.money-delta--negative { color: #ff7d85; }
+.animated-money .money-delta--positive {
+  color: #5df0a4 !important;
+  -webkit-text-fill-color: #5df0a4;
+}
+
+.animated-money .money-delta--negative {
+  color: #ff6474 !important;
+  -webkit-text-fill-color: #ff6474;
+}
 
 .player-card__status {
   margin: 11px 0;
@@ -679,10 +697,11 @@ button:focus-visible,
 .game-board {
   --tile-size: clamp(50px, 4vw, 58px);
   --tile-gap: 4px;
+  --board-padding: 12px;
   position: relative;
   width: calc(var(--tile-size) * 9 + var(--tile-gap) * 8 + 24px);
   height: calc(var(--tile-size) * 10 + var(--tile-gap) * 9 + 24px);
-  padding: 12px;
+  padding: var(--board-padding);
   display: grid;
   grid-template-columns: repeat(9, var(--tile-size));
   grid-template-rows: repeat(10, var(--tile-size));
@@ -725,8 +744,8 @@ button:focus-visible,
 
 .board-tile--gold { background: var(--gold); }
 .board-tile--shop { background: var(--green); }
-.board-tile--event,
-.board-tile--function { background: var(--purple); color: var(--white); }
+.board-tile--event { background: var(--purple); color: var(--white); }
+.board-tile--hospital { background: #e8f7ff; color: var(--ink); }
 .board-tile--jail { background: var(--gray); color: var(--white); }
 .board-tile--start { background: var(--red); color: var(--white); }
 
@@ -825,20 +844,171 @@ button:focus-visible,
   height: 15px;
 }
 
-.tile-pieces {
+.pawn-layer,
+.board-effect-layer {
   position: absolute;
-  z-index: 8;
-  right: -2px;
-  bottom: -2px;
-  display: flex;
-  align-items: flex-end;
+  inset: var(--board-padding);
+  display: grid;
+  grid-template-columns: repeat(9, var(--tile-size));
+  grid-template-rows: repeat(10, var(--tile-size));
+  gap: var(--tile-gap);
+  pointer-events: none;
 }
 
-.tile-pieces .pawn-icon {
-  width: 24px;
-  height: 24px;
-  margin-left: -9px;
-  filter: drop-shadow(0 2px 1px rgb(15 23 42 / 22%));
+.pawn-layer { z-index: 12; }
+
+.pawn-slot {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.pawn-motion {
+  position: absolute;
+  z-index: 2;
+  left: var(--pawn-x);
+  top: var(--pawn-y);
+  width: var(--pawn-size);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.pawn-motion > .pawn-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 3px 2px rgb(15 23 42 / 32%));
+}
+
+.pawn-status-badges {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 83%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 1px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 2px 2px rgb(15 23 42 / 34%));
+}
+
+.pawn-status-badge {
+  width: clamp(11px, 45%, 20px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 80%);
+  border-radius: 50%;
+  background: #fff9dc;
+  box-shadow: 0 1px 4px rgb(20 29 48 / 25%);
+}
+
+.pawn-status-badge--acquisition { background: #e8fff3; }
+
+.pawn-status-badge .game-icon {
+  width: 115%;
+  height: 115%;
+}
+
+.board-effect-layer {
+  z-index: 18;
+}
+
+.meteor-effect {
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.meteor-effect__bomb,
+.meteor-effect__shadow,
+.meteor-effect__flash,
+.meteor-effect__ring,
+.meteor-effect__smoke,
+.meteor-effect__debris {
+  position: absolute;
+  pointer-events: none;
+}
+
+.meteor-effect__bomb {
+  z-index: 5;
+  left: 50%;
+  top: 50%;
+  width: 88%;
+  height: 88%;
+  animation: meteor-bomb-drop 950ms linear both;
+}
+
+.meteor-effect__bomb .game-icon {
+  width: 100%;
+  height: 100%;
+}
+
+.meteor-effect__shadow {
+  z-index: 1;
+  left: 50%;
+  top: 67%;
+  width: 68%;
+  height: 19%;
+  border-radius: 50%;
+  background: rgb(18 25 43 / 52%);
+  animation: meteor-shadow 950ms linear both;
+}
+
+.meteor-effect__flash {
+  z-index: 7;
+  inset: -35%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fffbd1 0 14%, #ffc94b 25%, #ff725c 47%, transparent 70%);
+  mix-blend-mode: screen;
+  animation: meteor-flash 950ms ease-out both;
+}
+
+.meteor-effect__ring {
+  z-index: 6;
+  left: 50%;
+  top: 50%;
+  width: 30%;
+  height: 30%;
+  border: 5px solid #ffd66b;
+  border-radius: 50%;
+  animation: meteor-ring 950ms ease-out both;
+}
+
+.meteor-effect__smoke {
+  z-index: 8;
+  width: 32%;
+  height: 32%;
+  border-radius: 48% 52% 45% 55%;
+  background: #586078;
+  animation: meteor-smoke 950ms ease-out both;
+}
+
+.meteor-effect__smoke--one { left: 20%; top: 30%; }
+.meteor-effect__smoke--two { right: 14%; top: 38%; animation-delay: 35ms; }
+
+.meteor-effect__debris {
+  z-index: 9;
+  left: 50%;
+  top: 50%;
+  width: 9%;
+  height: 9%;
+  border-radius: 2px;
+  background: #ffb53d;
+  animation: meteor-debris 950ms ease-out both;
+}
+
+.meteor-effect__debris--one { --debris-x: -35px; --debris-y: -31px; }
+.meteor-effect__debris--two { --debris-x: 38px; --debris-y: -23px; animation-delay: 25ms; }
+.meteor-effect__debris--three { --debris-x: 30px; --debris-y: 29px; animation-delay: 45ms; }
+
+.board-tile--meteor-target .house-icon {
+  animation: meteor-house-impact 950ms linear both;
+  transform-origin: center bottom;
 }
 
 .board-center-mark {
@@ -1230,6 +1400,19 @@ button:focus-visible,
   gap: 8px;
 }
 
+.event-description-list {
+  margin: 0 0 14px;
+  padding: 12px 12px 12px 30px;
+  display: grid;
+  gap: 6px;
+  border: 1px solid #e1d7f8;
+  border-radius: 13px;
+  background: #f7f2ff;
+  color: #4e416a;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
 .target-card {
   padding: 9px;
   display: flex;
@@ -1292,6 +1475,54 @@ button:focus-visible,
   18% { opacity: 1; transform: translateY(0) scale(1); }
   70% { opacity: 1; }
   100% { opacity: 0; transform: translateY(-24px) scale(.96); }
+}
+
+@keyframes meteor-bomb-drop {
+  0% { opacity: 0; transform: translate(-50%, -420%) rotate(-28deg) scale(.72); }
+  8% { opacity: 1; }
+  58% { opacity: 1; transform: translate(-50%, -50%) rotate(24deg) scale(1); }
+  62% { opacity: 0; transform: translate(-50%, -42%) rotate(28deg) scale(1.18); }
+  100% { opacity: 0; transform: translate(-50%, -42%) rotate(28deg) scale(1.18); }
+}
+
+@keyframes meteor-shadow {
+  0% { opacity: .08; transform: translate(-50%, -50%) scale(.22); }
+  58% { opacity: .72; transform: translate(-50%, -50%) scale(1); }
+  64%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(1.2); }
+}
+
+@keyframes meteor-flash {
+  0%, 58% { opacity: 0; transform: scale(.1); }
+  63% { opacity: 1; transform: scale(.68); }
+  78% { opacity: .55; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.25); }
+}
+
+@keyframes meteor-ring {
+  0%, 59% { opacity: 0; transform: translate(-50%, -50%) scale(.2); }
+  64% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(4); }
+}
+
+@keyframes meteor-smoke {
+  0%, 60% { opacity: 0; transform: translateY(12px) scale(.25); }
+  70% { opacity: .92; }
+  100% { opacity: 0; transform: translateY(-28px) scale(1.45); }
+}
+
+@keyframes meteor-debris {
+  0%, 60% { opacity: 0; transform: translate(-50%, -50%) rotate(0); }
+  66% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--debris-x)), calc(-50% + var(--debris-y))) rotate(190deg); }
+}
+
+@keyframes meteor-house-impact {
+  0%, 58% { transform: translate(0) rotate(0); filter: brightness(1); }
+  61% { transform: translate(-3px, 1px) rotate(-5deg) scale(.96); filter: brightness(1.9); }
+  65% { transform: translate(3px, 0) rotate(5deg) scale(1.02); }
+  69% { transform: translate(-2px, 1px) rotate(-3deg); }
+  74% { transform: translate(2px, 0) rotate(2deg); }
+  82%, 100% { transform: translate(0) rotate(0); filter: brightness(1); }
 }
 
 @media (hover: hover) {
@@ -1513,9 +1744,10 @@ button:focus-visible,
   .game-board {
     --tile-size: clamp(28px, 8.15vw, 31.5px);
     --tile-gap: 2px;
+    --board-padding: 6px;
     width: calc(var(--tile-size) * 9 + var(--tile-gap) * 8 + 12px);
     height: calc(var(--tile-size) * 10 + var(--tile-gap) * 9 + 12px);
-    padding: 6px;
+    padding: var(--board-padding);
     border-radius: 14px;
   }
 
@@ -1530,7 +1762,6 @@ button:focus-visible,
   .tile-reward { display: none; }
   .tile-level { font-size: 5px; }
   .tile-link-badge { left: 3px; width: 8px; height: 8px; font-size: 5px; }
-  .tile-pieces .pawn-icon { width: 17px; height: 17px; margin-left: -7px; }
   .tile-effect-icons .game-icon { width: 11px; height: 11px; }
   .board-center-mark { border-radius: 8px; }
   .board-center-mark strong { font-size: 12px; }
@@ -1597,7 +1828,7 @@ button:focus-visible,
     padding-bottom: 5px;
   }
   .game-topbar { height: 42px; margin-bottom: 4px; }
-  .game-board { --tile-size: 51px; --tile-gap: 3px; padding: 9px; }
+  .game-board { --tile-size: 51px; --tile-gap: 3px; --board-padding: 9px; padding: var(--board-padding); }
   .board-column { gap: 6px; }
   .action-dock {
     height: 82px;
@@ -1624,6 +1855,17 @@ button:focus-visible,
   .money-delta {
     animation-name: money-delta-fade;
     transform: none;
+  }
+
+  .meteor-effect__bomb { opacity: 0; }
+  .meteor-effect__shadow { opacity: 0; }
+  .meteor-effect__flash {
+    opacity: .72;
+    transform: scale(1);
+  }
+  .meteor-effect__ring {
+    opacity: .8;
+    transform: translate(-50%, -50%) scale(2.4);
   }
 }
 

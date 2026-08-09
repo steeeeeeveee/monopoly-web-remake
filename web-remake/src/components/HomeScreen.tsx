@@ -111,6 +111,9 @@ export function HomeScreen({ onStart }: HomeScreenProps) {
                 {tile.kind === 'jail' && (
                   <GameIcon name="jail" />
                 )}
+                {tile.kind === 'hospital' && (
+                  <GameIcon name="hospital" />
+                )}
                 {tile.kind === 'start' && (
                   <GameIcon name="start" />
                 )}

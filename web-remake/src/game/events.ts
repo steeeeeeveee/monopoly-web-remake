@@ -6,12 +6,16 @@ import type {
 } from './types'
 
 type RandomSource = () => number
+type RandomEventAction = Extract<
+  GameAction,
+  { type: 'RESOLVE_RANDOM_EVENT' }
+>
 
 export function createRandomEventAction(
   state: GameState,
   targetId: PlayerId,
   random: RandomSource = Math.random,
-): GameAction {
+): RandomEventAction {
   const eventRoll = Math.floor(random() * 4)
   let event: RandomEventResult
   let propertyTileIndex: number | undefined

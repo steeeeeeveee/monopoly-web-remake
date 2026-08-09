@@ -240,11 +240,14 @@ function finishTurn(state: GameState): GameState {
         : player,
     )
 
+    const isHospitalized = nextPlayer.position === 35
     log = addLog(
       log,
-      remainingTurns > 0
-        ? `${nextPlayer.name} 在监狱中，跳过本回合`
-        : `${nextPlayer.name} 在监狱中跳过本回合，现已出狱`,
+      isHospitalized
+        ? `${nextPlayer.name} 正在医院休养，跳过本回合后出院`
+        : remainingTurns > 0
+          ? `${nextPlayer.name} 在监狱中，跳过本回合`
+          : `${nextPlayer.name} 在监狱中跳过本回合，现已出狱`,
     )
 
     nextPlayerId = getNextPlayerId(nextPlayerId)
@@ -385,7 +388,7 @@ function resolveLanding(state: GameState): GameState {
       tileEffects,
       log: addLog(
         state.log,
-        `${currentPlayer.name} 踩到炸弹，被传送到第 35 格并进入监狱`,
+        `${currentPlayer.name} 踩到炸弹，被送往第 35 格医院并住院一回合`,
       ),
     })
   }
@@ -558,7 +561,9 @@ function resolveLanding(state: GameState): GameState {
       ...state,
       log: addLog(
         state.log,
-        `${owner.name} 正在监狱中，本次不收租金`,
+        owner.position === 35
+          ? `${owner.name} 正在医院住院，本次不收租金`
+          : `${owner.name} 正在监狱中，本次不收租金`,
       ),
     })
   }

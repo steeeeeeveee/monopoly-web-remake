@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
 } from 'react'
+import { GameIcon } from './GameIcon'
 
 interface AnimatedMoneyProps {
   value: number
@@ -128,6 +129,7 @@ export function AnimatedMoney({
 
   return (
     <span className="animated-money">
+      <GameIcon name="coin" />
       <strong aria-label={`金币 ${value}`}>
         ¥ {displayValue}
       </strong>
@@ -139,7 +141,15 @@ export function AnimatedMoney({
                 ? 'money-delta--positive'
                 : 'money-delta--negative'
             }`}
-            style={{ '--delta-order': index } as CSSProperties}
+            style={{
+              '--delta-order': index,
+              '--money-delta-color':
+                delta.amount > 0 ? '#5df0a4' : '#ff6474',
+              '--money-delta-background':
+                delta.amount > 0
+                  ? 'rgb(10 71 47 / 94%)'
+                  : 'rgb(91 24 38 / 94%)',
+            } as CSSProperties}
             key={delta.id}
           >
             {delta.amount > 0 ? '+' : ''}

@@ -9,6 +9,8 @@ type GameIconName =
   | 'bomb'
   | 'remote'
   | 'web'
+  | 'dizzy'
+  | 'acquisition'
   | 'start'
   | 'computer'
 
@@ -33,22 +35,49 @@ export function GameIcon({
     >
       {name === 'coin' && (
         <>
-          <circle cx="32" cy="32" r="25" fill="#f7bf3f" />
-          <circle
-            cx="32"
-            cy="32"
-            r="20"
-            fill="none"
-            stroke="#8b5a16"
-            strokeWidth="3"
+          <ellipse cx="25" cy="38" rx="18" ry="15" fill="#d88a13" />
+          <path
+            d="M7 31v8c0 8 8 14 18 14s18-6 18-14v-8Z"
+            fill="#e9a622"
+            stroke="#77430d"
+            strokeLinejoin="round"
+            strokeWidth="3.5"
+          />
+          <ellipse
+            cx="25"
+            cy="31"
+            rx="18"
+            ry="15"
+            fill="#ffc94b"
+            stroke="#77430d"
+            strokeWidth="3.5"
+          />
+          <ellipse cx="25" cy="31" rx="12" ry="9.5" fill="#f5ae2d" />
+          <path
+            d="m25 22 2.5 5.5 6 .7-4.4 4.1 1.2 5.8-5.3-2.9-5.3 2.9 1.2-5.8-4.4-4.1 6-.7Z"
+            fill="#fff2a8"
+            stroke="#a36210"
+            strokeLinejoin="round"
+            strokeWidth="1.8"
           />
           <path
-            d="M21 26h22M21 38h22M32 21v22"
+            d="M14 23c3-3 6-4 10-4"
             fill="none"
-            stroke="#8b5a16"
+            stroke="#fff7c7"
             strokeLinecap="round"
-            strokeWidth="4"
+            strokeWidth="3"
           />
+          <ellipse
+            cx="44"
+            cy="22"
+            rx="13"
+            ry="11"
+            fill="#ffc94b"
+            stroke="#77430d"
+            strokeWidth="3.5"
+          />
+          <path d="M39 18c2-2 5-2 7-1" stroke="#fff7c7" strokeLinecap="round" strokeWidth="2.5" />
+          <path d="M36 26c5 5 13 5 19-1" fill="none" stroke="#d88a13" strokeWidth="3" />
         </>
       )}
 
@@ -120,15 +149,17 @@ export function GameIcon({
       {name === 'hospital' && (
         <>
           <path
-            d="M12 13h40v43H12Z"
-            fill="#f7efff"
-            stroke="#342657"
+            d="M10 22h44v34H10Z"
+            fill="#ffffff"
+            stroke="#26324f"
             strokeLinejoin="round"
             strokeWidth="4"
           />
-          <path d="M26 8h12v20H26Z" fill="#ffffff" stroke="#342657" strokeWidth="4" />
-          <path d="M32 12v12M26 18h12" stroke="#ef5f68" strokeLinecap="round" strokeWidth="5" />
-          <path d="M20 39h8v17h-8ZM36 39h8v17h-8Z" fill="#9c7be8" />
+          <path d="M19 22V11h26v11" fill="#ffffff" stroke="#26324f" strokeLinejoin="round" strokeWidth="4" />
+          <path d="M32 13v14M25 20h14" stroke="#ef5f68" strokeLinecap="round" strokeWidth="5" />
+          <path d="M17 34h8v8h-8ZM39 34h8v8h-8Z" fill="#9fd9ef" stroke="#26324f" strokeWidth="2.5" />
+          <path d="M27 43h10v13H27Z" fill="#9fd9ef" stroke="#26324f" strokeWidth="3" />
+          <path d="M7 56h50" stroke="#26324f" strokeLinecap="round" strokeWidth="4" />
         </>
       )}
 
@@ -178,16 +209,48 @@ export function GameIcon({
 
       {name === 'web' && (
         <>
-          <circle cx="32" cy="32" r="25" fill="#f3edff" stroke="#342657" strokeWidth="3" />
-          <circle cx="32" cy="32" r="17" fill="none" stroke="#8d63df" strokeWidth="2.5" />
-          <circle cx="32" cy="32" r="9" fill="none" stroke="#8d63df" strokeWidth="2.5" />
           <path
-            d="M32 7v50M7 32h50M14 14l36 36M50 14 14 50"
-            stroke="#8d63df"
+            d="M7 8 29 31M57 7 29 31M56 55 29 31M8 56 29 31M29 4v27M4 31h25"
+            fill="none"
+            stroke="#f7f3ff"
             strokeLinecap="round"
-            strokeWidth="2.5"
+            strokeWidth="4.8"
           />
-          <circle cx="37" cy="27" r="3.5" fill="#342657" />
+          <path
+            d="M15 16c8-3 15-2 21 2M8 31c8-7 17-9 27-6M15 48c2-9 9-17 19-22M45 13c-1 9 1 17 8 24M47 50c-2-8-8-14-17-18"
+            fill="none"
+            stroke="#c9b6f5"
+            strokeLinecap="round"
+            strokeWidth="3.4"
+          />
+          <path d="M42 29v12" stroke="#342657" strokeLinecap="round" strokeWidth="2.5" />
+          <ellipse cx="42" cy="45" rx="5.5" ry="6" fill="#342657" />
+          <circle cx="42" cy="39" r="4" fill="#5d3f8e" />
+          <path d="m38 42-5-3m5 7-6 2m14-6 5-3m-5 7 6 2" stroke="#342657" strokeLinecap="round" strokeWidth="2.5" />
+        </>
+      )}
+
+      {name === 'dizzy' && (
+        <>
+          <path
+            d="M11 35c5-14 38-17 43-3 4 11-16 17-28 12-10-4-7-12 2-14 8-2 16 2 15 7"
+            fill="none"
+            stroke="#5f4898"
+            strokeLinecap="round"
+            strokeWidth="4"
+          />
+          <path d="m16 17 2.5 5.5 6 .7-4.5 4 1.3 6-5.3-3.1-5.3 3.1 1.3-6-4.5-4 6-.7Zm29-6 2.1 4.5 5 .6-3.7 3.4 1 5-4.4-2.5-4.4 2.5 1-5-3.7-3.4 5-.6Z" fill="#ffd05a" stroke="#7e5111" strokeLinejoin="round" strokeWidth="2" />
+          <circle cx="31" cy="18" r="4" fill="#ff7d85" stroke="#7b3342" strokeWidth="2" />
+        </>
+      )}
+
+      {name === 'acquisition' && (
+        <>
+          <path d="M7 35 27 18l20 17v21H7Z" fill="#fff5df" stroke="#243250" strokeLinejoin="round" strokeWidth="4" />
+          <path d="M19 56V39h16v17" fill="#ef8e74" stroke="#243250" strokeWidth="3" />
+          <circle cx="47" cy="19" r="13" fill="#ffc94b" stroke="#77430d" strokeWidth="3.5" />
+          <path d="m47 11 2.2 4.7 5.1.6-3.8 3.5 1 5-4.5-2.6-4.5 2.6 1-5-3.8-3.5 5.1-.6Z" fill="#fff2a8" stroke="#a36210" strokeLinejoin="round" strokeWidth="1.5" />
+          <path d="M38 35h19M50 29l7 6-7 6" fill="none" stroke="#2e9d73" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" />
         </>
       )}
 

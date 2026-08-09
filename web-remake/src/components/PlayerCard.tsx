@@ -41,7 +41,9 @@ export function PlayerCard({
   const statusText = player.bankrupt
     ? '已破产'
     : player.inJail
-      ? `监狱 ${player.jailTurnsLeft} 回合`
+      ? player.position === 35
+        ? `住院 ${player.jailTurnsLeft} 回合`
+        : `监狱 ${player.jailTurnsLeft} 回合`
       : '状态正常'
 
   return (

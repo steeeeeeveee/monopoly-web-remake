@@ -6,6 +6,7 @@ import type {
   PlayerId,
 } from '../game/types'
 import { DICE_MAX, DICE_MIN } from '../game/constants'
+import type { BoardEffect } from '../ui/boardEffects'
 import {
   getPropertyTotalCost,
   getUpgradeCost,
@@ -29,6 +30,9 @@ interface GameShellProps {
   onReturnHome: () => void
   isDiceAnimating: boolean
   onDiceAnimationComplete: () => void
+  onMoveStepComplete: () => void
+  boardEffect: BoardEffect | null
+  onBoardEffectComplete: (effectId: number) => void
   gameSessionId: number
 }
 
@@ -43,6 +47,9 @@ export function GameShell({
   onReturnHome,
   isDiceAnimating,
   onDiceAnimationComplete,
+  onMoveStepComplete,
+  boardEffect,
+  onBoardEffectComplete,
   gameSessionId,
 }: GameShellProps) {
   const playerOne = state.players[0]
@@ -155,7 +162,15 @@ export function GameShell({
         />
 
         <div className="board-column">
-          <BoardView state={state} dispatch={dispatch} />
+          <BoardView
+            key={gameSessionId}
+            state={state}
+            dispatch={dispatch}
+            isDiceAnimating={isDiceAnimating}
+            onMoveStepComplete={onMoveStepComplete}
+            boardEffect={boardEffect}
+            onBoardEffectComplete={onBoardEffectComplete}
+          />
           <ActionDock
             state={state}
             currentPlayer={currentPlayer}
@@ -277,12 +292,19 @@ export function GameShell({
       <GameModal
         open={
           isHumanTurn &&
-          state.phase === 'awaitingEventTarget'
+          state.phase === 'awaitingEventTarget' &&
+          boardEffect === null
         }
         title="随机事件降临"
         description="选择一名仍在游戏中的玩家承受随机事件。"
         icon={<GameIcon name="event" />}
       >
+        <ol className="event-description-list">
+          <li>召唤炸弹摧毁目标的一块地产</li>
+          <li>迷惑玩家，使其下一回合反向移动</li>
+          <li>资产减半或增加，增加金额不超过 5000</li>
+          <li>获得一次强制收购机会</li>
+        </ol>
         <div className="event-target-list">
           {state.players
             .filter((player) => !player.bankrupt)

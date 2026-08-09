@@ -25,9 +25,15 @@ describe('金币动画', () => {
     view.rerender(
       <AnimatedMoney value={5100} resetKey={0} />,
     )
-    expect(screen.getByText('+100')).toHaveClass(
+    const positiveDelta = screen.getByText('+100')
+    expect(positiveDelta).toHaveClass(
       'money-delta--positive',
     )
+    expect(
+      positiveDelta.style.getPropertyValue(
+        '--money-delta-color',
+      ),
+    ).toBe('#5df0a4')
 
     act(() => {
       vi.advanceTimersByTime(500)
@@ -37,9 +43,15 @@ describe('金币动画', () => {
     view.rerender(
       <AnimatedMoney value={5000} resetKey={0} />,
     )
-    expect(screen.getByText('-100')).toHaveClass(
+    const negativeDelta = screen.getByText('-100')
+    expect(negativeDelta).toHaveClass(
       'money-delta--negative',
     )
+    expect(
+      negativeDelta.style.getPropertyValue(
+        '--money-delta-color',
+      ),
+    ).toBe('#ff6474')
     expect(screen.getByText('+100')).toBeInTheDocument()
   })
 

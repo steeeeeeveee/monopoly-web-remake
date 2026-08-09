@@ -497,7 +497,7 @@ describe('道具使用', () => {
     expect(state.phase).toBe('awaitingDecision')
   })
 
-  it('放置的炸弹会把停在该格的玩家送入监狱', () => {
+  it('放置的炸弹会把停在该格的玩家送往医院', () => {
     let state = createInitialGameState()
 
     state = {
@@ -541,6 +541,7 @@ describe('道具使用', () => {
     expect(playerTwo?.inJail).toBe(true)
     expect(playerTwo?.jailTurnsLeft).toBe(1)
     expect(state.tileEffects[2]?.hasBomb).toBe(false)
+    expect(state.log[0]).toContain('第 35 格医院')
   })
 
   it('蛛网会在移动途中拦住玩家并在触发后消失', () => {

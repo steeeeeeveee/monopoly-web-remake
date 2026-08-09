@@ -5,7 +5,7 @@ export type TileKind =
   | 'jail'
   | 'shop'
   | 'event'
-  | 'function'
+  | 'hospital'
 
 export interface BoardTile {
   index: number
@@ -56,7 +56,7 @@ const goldTiles = new Set(
 const jailTiles = new Set([22, 48])
 const shopTiles = new Set([13, 28, 37, 46])
 const eventTiles = new Set([5, 16, 30, 43])
-const functionTiles = new Set([35])
+const hospitalTiles = new Set([35])
 
 function getTileKind(index: number): TileKind {
   if (index === 0) return 'start'
@@ -64,7 +64,7 @@ function getTileKind(index: number): TileKind {
   if (jailTiles.has(index)) return 'jail'
   if (shopTiles.has(index)) return 'shop'
   if (eventTiles.has(index)) return 'event'
-  if (functionTiles.has(index)) return 'function'
+  if (hospitalTiles.has(index)) return 'hospital'
   return 'property'
 }
 
@@ -74,7 +74,7 @@ function getTileLabel(index: number, kind: TileKind): string {
   if (kind === 'jail') return '监狱'
   if (kind === 'shop') return '商店'
   if (kind === 'event') return '事件'
-  if (kind === 'function') return '功能'
+  if (kind === 'hospital') return '医院'
   return String(index)
 }
 
