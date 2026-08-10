@@ -28,6 +28,7 @@ import {
   type BoardEffect,
   type BoardEffectSpec,
 } from './ui/boardEffects'
+import { getDiceAnimationVariant } from './ui/diceAnimation'
 import './App.css'
 
 type RandomEventAction = Extract<
@@ -45,6 +46,7 @@ type DeferredBoardAction =
   | TileEffectResolutionAction
 
 function App() {
+  const diceAnimationVariant = getDiceAnimationVariant()
   const [gameStarted, setGameStarted] = useState(false)
   const [gameSessionId, setGameSessionId] = useState(0)
   const [isDiceAnimating, setIsDiceAnimating] =
@@ -389,6 +391,7 @@ function App() {
       boardEffect={boardEffect}
       onBoardEffectComplete={finishBoardEffect}
       gameSessionId={gameSessionId}
+      diceAnimationVariant={diceAnimationVariant}
     />
   )
 }

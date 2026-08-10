@@ -1403,6 +1403,11 @@ button:focus-visible,
   object-fit: cover;
 }
 
+.dice-view__final-face {
+  position: relative;
+  z-index: 2;
+}
+
 .dice-view__final-face--preloaded {
   visibility: hidden;
 }
@@ -1415,6 +1420,174 @@ button:focus-visible,
 
 .dice-view--rolling {
   animation: dice-wobble 150ms ease-in-out infinite alternate;
+}
+
+.dice-view--impact {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 34%, #fff 0 28%, transparent 62%),
+    linear-gradient(155deg, #fffdf3, #f1e4bd);
+  box-shadow:
+    inset 0 0 0 1px rgb(117 79 17 / 12%),
+    0 8px 18px rgb(8 16 33 / 30%);
+}
+
+.dice-view--impact img {
+  object-fit: contain;
+  transform-origin: 50% 72%;
+  will-change: transform;
+}
+
+.dice-impact-shadow,
+.dice-impact-ring,
+.dice-impact-spark {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+}
+
+.dice-view--impact .dice-impact-shadow {
+  z-index: 0;
+  bottom: 7%;
+  left: 50%;
+  width: 54%;
+  height: 10%;
+  display: block;
+  border-radius: 50%;
+  background: rgb(43 31 21 / 34%);
+  filter: blur(2px);
+  transform: translateX(-50%);
+}
+
+.dice-view--impact-anticipation .dice-view__rolling-frame {
+  animation: impact-dice-anticipation 100ms ease-in both;
+}
+
+.dice-view--impact-anticipation .dice-impact-shadow {
+  animation: impact-shadow-anticipation 100ms ease-in both;
+}
+
+.dice-view--impact-flight .dice-view__rolling-frame {
+  animation: impact-dice-flight 520ms cubic-bezier(.22, .72, .25, 1) both;
+}
+
+.dice-view--impact-flight .dice-impact-shadow {
+  animation: impact-shadow-flight 520ms ease-in-out both;
+}
+
+.dice-view--impact-descent .dice-view__rolling-frame {
+  animation: impact-dice-descent 140ms cubic-bezier(.55, .03, .88, .47) both;
+}
+
+.dice-view--impact-descent .dice-impact-shadow {
+  animation: impact-shadow-descent 140ms ease-in both;
+}
+
+.dice-view--impact-impact .dice-view__final-face {
+  animation: impact-dice-landing 140ms cubic-bezier(.22, .78, .31, 1.22) both;
+}
+
+.dice-view--impact-impact .dice-impact-shadow {
+  animation: impact-shadow-landing 140ms ease-out both;
+}
+
+.dice-view--impact-impact .dice-impact-ring {
+  z-index: 1;
+  bottom: 7%;
+  left: 50%;
+  width: 48%;
+  aspect-ratio: 1;
+  display: block;
+  border: 3px solid #f3b83e;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgb(255 204 79 / 78%);
+  animation: impact-dice-ring 140ms ease-out both;
+}
+
+.dice-view--impact-impact .dice-impact-spark {
+  --spark-x: 0px;
+  --spark-y: 0px;
+  z-index: 3;
+  top: 61%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  display: block;
+  border-radius: 50%;
+  background: #ffd761;
+  box-shadow: 0 0 5px #ffb72f;
+  animation: impact-dice-spark 140ms ease-out both;
+}
+
+.dice-impact-spark--1 { --spark-x: -23px; --spark-y: -13px; }
+.dice-impact-spark--2 { --spark-x: -26px; --spark-y: 2px; }
+.dice-impact-spark--3 { --spark-x: -14px; --spark-y: 15px; }
+.dice-impact-spark--4 { --spark-x: 14px; --spark-y: 15px; }
+.dice-impact-spark--5 { --spark-x: 26px; --spark-y: 2px; }
+.dice-impact-spark--6 { --spark-x: 23px; --spark-y: -13px; }
+
+@keyframes impact-dice-anticipation {
+  from { transform: translateY(0) rotate(0) scale(1); }
+  to { transform: translateY(7%) rotate(-9deg) scale(1.06, .82); }
+}
+
+@keyframes impact-dice-flight {
+  0% { transform: translateY(7%) rotate(-9deg) scale(1.06, .82); }
+  44% { transform: translateY(-18%) rotate(108deg) scale(.9); }
+  100% { transform: translateY(-12%) rotate(215deg) scale(.94); }
+}
+
+@keyframes impact-dice-descent {
+  from { transform: translateY(-12%) rotate(215deg) scale(.94); }
+  to { transform: translateY(7%) rotate(345deg) scale(1.06, .88); }
+}
+
+@keyframes impact-dice-landing {
+  0% { transform: translateY(7%) rotate(-2deg) scale(1.18, .72); }
+  58% { transform: translateY(-6%) rotate(1deg) scale(.92, 1.08); }
+  100% { transform: translateY(0) rotate(0) scale(1); }
+}
+
+@keyframes impact-shadow-anticipation {
+  from { opacity: .32; transform: translateX(-50%) scale(.78); }
+  to { opacity: .5; transform: translateX(-50%) scale(1.04); }
+}
+
+@keyframes impact-shadow-flight {
+  0% { opacity: .5; transform: translateX(-50%) scale(1.04); }
+  44% { opacity: .13; transform: translateX(-50%) scale(.5); }
+  100% { opacity: .22; transform: translateX(-50%) scale(.66); }
+}
+
+@keyframes impact-shadow-descent {
+  from { opacity: .22; transform: translateX(-50%) scale(.66); }
+  to { opacity: .58; transform: translateX(-50%) scale(1.14); }
+}
+
+@keyframes impact-shadow-landing {
+  0% { opacity: .68; transform: translateX(-50%) scale(1.22); }
+  100% { opacity: .32; transform: translateX(-50%) scale(.82); }
+}
+
+@keyframes impact-dice-ring {
+  0% { opacity: .95; transform: translate(-50%, 34%) scale(.18, .08); }
+  100% { opacity: 0; transform: translate(-50%, 34%) scale(1.65, .48); }
+}
+
+@keyframes impact-dice-spark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--spark-x)),
+        calc(-50% + var(--spark-y))
+      )
+      scale(.2);
+  }
 }
 
 .primary-actions {
@@ -2305,6 +2478,12 @@ button:focus-visible,
   }
 
   .event-bomb-drop { display: none; }
+
+  .dice-impact-shadow,
+  .dice-impact-ring,
+  .dice-impact-spark {
+    display: none !important;
+  }
 
   .web-capture-effect__net,
   .web-capture-effect__strand,

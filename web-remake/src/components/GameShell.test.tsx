@@ -34,6 +34,7 @@ describe('随机事件弹窗', () => {
         boardEffect={null}
         onBoardEffectComplete={vi.fn()}
         gameSessionId={0}
+        diceAnimationVariant="classic"
       />,
     )
 
@@ -70,6 +71,7 @@ describe('玩家面板道具操作', () => {
         boardEffect={null}
         onBoardEffectComplete={vi.fn()}
         gameSessionId={0}
+        diceAnimationVariant="classic"
       />,
     )
 

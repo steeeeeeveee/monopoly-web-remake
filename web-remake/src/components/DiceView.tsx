@@ -6,13 +6,26 @@ import {
 import {
   DICE_FRAME_DURATION_MS,
   DICE_ROLL_DURATION_MS,
+  IMPACT_DICE_DESCENT_START_MS,
+  IMPACT_DICE_FLIGHT_START_MS,
+  IMPACT_DICE_FRAME_DURATION_MS,
+  IMPACT_DICE_RESULT_REVEAL_MS,
 } from '../game/constants'
+import type { DiceAnimationVariant } from '../ui/diceAnimation'
+
+type ImpactDicePhase =
+  | 'idle'
+  | 'anticipation'
+  | 'flight'
+  | 'descent'
+  | 'impact'
 
 interface DiceViewProps {
   value: number | null
   isRolling: boolean
   onAnimationComplete?: () => void
   className?: string
+  animationVariant?: DiceAnimationVariant
 }
 
 export function DiceView({
@@ -20,14 +33,18 @@ export function DiceView({
   isRolling,
   onAnimationComplete,
   className = '',
+  animationVariant = 'classic',
 }: DiceViewProps) {
   const [rollingFrame, setRollingFrame] = useState(0)
-  const [showRollingFrame, setShowRollingFrame] =
+  const [showClassicRollingFrame, setShowClassicRollingFrame] =
     useState(false)
+  const [impactPhase, setImpactPhase] =
+    useState<ImpactDicePhase>('idle')
 
   useEffect(() => {
     if (!isRolling) {
-      setShowRollingFrame(false)
+      setShowClassicRollingFrame(false)
+      setImpactPhase('idle')
       return
     }
 
@@ -37,13 +54,50 @@ export function DiceView({
       ).matches ?? false
 
     if (reduceMotion) {
-      setShowRollingFrame(false)
+      setShowClassicRollingFrame(false)
+      setImpactPhase('idle')
       onAnimationComplete?.()
       return
     }
 
     setRollingFrame(0)
-    setShowRollingFrame(true)
+
+    if (animationVariant === 'impact') {
+      setShowClassicRollingFrame(false)
+      setImpactPhase('anticipation')
+
+      const frameTimer = window.setInterval(() => {
+        setRollingFrame(
+          (currentFrame) =>
+            (currentFrame + 1) % rollingDiceFrames.length,
+        )
+      }, IMPACT_DICE_FRAME_DURATION_MS)
+      const flightTimer = window.setTimeout(() => {
+        setImpactPhase('flight')
+      }, IMPACT_DICE_FLIGHT_START_MS)
+      const descentTimer = window.setTimeout(() => {
+        setImpactPhase('descent')
+      }, IMPACT_DICE_DESCENT_START_MS)
+      const revealTimer = window.setTimeout(() => {
+        window.clearInterval(frameTimer)
+        setImpactPhase('impact')
+      }, IMPACT_DICE_RESULT_REVEAL_MS)
+      const finishTimer = window.setTimeout(() => {
+        setImpactPhase('idle')
+        onAnimationComplete?.()
+      }, DICE_ROLL_DURATION_MS)
+
+      return () => {
+        window.clearInterval(frameTimer)
+        window.clearTimeout(flightTimer)
+        window.clearTimeout(descentTimer)
+        window.clearTimeout(revealTimer)
+        window.clearTimeout(finishTimer)
+      }
+    }
+
+    setImpactPhase('idle')
+    setShowClassicRollingFrame(true)
 
     const frameTimer = window.setInterval(() => {
       setRollingFrame(
@@ -52,7 +106,7 @@ export function DiceView({
       )
     }, DICE_FRAME_DURATION_MS)
     const finishTimer = window.setTimeout(() => {
-      setShowRollingFrame(false)
+      setShowClassicRollingFrame(false)
       window.clearInterval(frameTimer)
       onAnimationComplete?.()
     }, DICE_ROLL_DURATION_MS)
@@ -61,7 +115,17 @@ export function DiceView({
       window.clearInterval(frameTimer)
       window.clearTimeout(finishTimer)
     }
-  }, [isRolling, onAnimationComplete, value])
+  }, [animationVariant, isRolling, onAnimationComplete, value])
+
+  const showImpactRollingFrame =
+    animationVariant === 'impact' &&
+    (impactPhase === 'anticipation' ||
+      impactPhase === 'flight' ||
+      impactPhase === 'descent')
+  const showRollingFrame =
+    showClassicRollingFrame || showImpactRollingFrame
+  const showImpactStage =
+    animationVariant === 'impact' && impactPhase !== 'idle'
 
   const finalImageSource = value
     ? getDiceFaceSource(value)
@@ -73,10 +137,37 @@ export function DiceView({
   return (
     <div
       className={`dice-view ${
-        showRollingFrame ? 'dice-view--rolling' : ''
+        showClassicRollingFrame ? 'dice-view--rolling' : ''
+      } ${
+        showImpactStage
+          ? `dice-view--impact dice-view--impact-${impactPhase}`
+          : ''
       } ${className}`}
+      data-animation-variant={animationVariant}
+      data-animation-phase={impactPhase}
       aria-label={`骰子点数 ${value ?? '尚未投掷'}`}
     >
+      {animationVariant === 'impact' && (
+        <>
+          <span
+            className="dice-impact-shadow"
+            aria-hidden="true"
+          />
+          <span
+            className="dice-impact-ring"
+            aria-hidden="true"
+          />
+          {Array.from({ length: 6 }, (_, index) => (
+            <span
+              className={`dice-impact-spark dice-impact-spark--${
+                index + 1
+              }`}
+              key={index}
+              aria-hidden="true"
+            />
+          ))}
+        </>
+      )}
       {finalImageSource && (
         <img
           className={`dice-view__final-face ${

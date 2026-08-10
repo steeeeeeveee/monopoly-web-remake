@@ -13,6 +13,7 @@ afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
   vi.useRealTimers()
+  window.history.replaceState({}, '', '/')
 })
 
 async function enterLocalGame(
@@ -241,6 +242,56 @@ describe('大富翁页面', () => {
     act(() => {
       vi.advanceTimersByTime(1)
     })
+    expect(screen.getByText('第 1 格')).toBeInTheDocument()
+  })
+
+  it('冲击骰子落地完成后才开始移动棋子', () => {
+    vi.useFakeTimers()
+    vi.spyOn(Math, 'random').mockReturnValue(0.1)
+    window.history.replaceState(
+      {},
+      '',
+      '/?diceAnimation=impact',
+    )
+
+    render(<App />)
+    fireEvent.click(
+      screen.getByRole('button', { name: '双人同屏' }),
+    )
+
+    act(() => vi.advanceTimersByTime(250))
+    fireEvent.click(
+      screen.getByRole('button', { name: '掷骰子' }),
+    )
+
+    const dice = screen.getByLabelText('骰子点数 2')
+    expect(dice).toHaveAttribute(
+      'data-animation-variant',
+      'impact',
+    )
+
+    act(() => vi.advanceTimersByTime(759))
+    expect(
+      dice.querySelector('[data-dice-layer="rolling"]'),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
+
+    act(() => vi.advanceTimersByTime(1))
+    expect(
+      dice.querySelector('[data-dice-layer="rolling"]'),
+    ).not.toBeInTheDocument()
+    expect(
+      dice.querySelector('[data-dice-layer="final"]'),
+    ).not.toHaveClass('dice-view__final-face--preloaded')
+
+    act(() => vi.advanceTimersByTime(139))
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
+
+    act(() => vi.advanceTimersByTime(1))
+    act(() => vi.advanceTimersByTime(279))
+    expect(screen.getAllByText('第 0 格')).toHaveLength(2)
+
+    act(() => vi.advanceTimersByTime(1))
     expect(screen.getByText('第 1 格')).toBeInTheDocument()
   })
 })

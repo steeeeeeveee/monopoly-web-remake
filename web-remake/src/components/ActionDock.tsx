@@ -11,6 +11,7 @@ import type {
 } from '../game/types'
 import { DiceView } from './DiceView'
 import { GameIcon } from './GameIcon'
+import type { DiceAnimationVariant } from '../ui/diceAnimation'
 
 interface ActionDockProps {
   state: GameState
@@ -20,6 +21,7 @@ interface ActionDockProps {
   onUseItem: (item: ItemType) => void
   isDiceAnimating: boolean
   onDiceAnimationComplete: () => void
+  diceAnimationVariant: DiceAnimationVariant
 }
 
 export function ActionDock({
@@ -30,6 +32,7 @@ export function ActionDock({
   onUseItem,
   isDiceAnimating,
   onDiceAnimationComplete,
+  diceAnimationVariant,
 }: ActionDockProps) {
   const rollButtonRef = useRef<HTMLButtonElement>(null)
   const isAITurn = currentPlayer.isAI
@@ -81,6 +84,7 @@ export function ActionDock({
         value={state.diceValue}
         isRolling={isDiceAnimating}
         onAnimationComplete={onDiceAnimationComplete}
+        animationVariant={diceAnimationVariant}
       />
 
       <div className="primary-actions">

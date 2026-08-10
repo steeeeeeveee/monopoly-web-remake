@@ -8,6 +8,7 @@ import type {
 } from '../game/types'
 import { DICE_MAX, DICE_MIN } from '../game/constants'
 import type { BoardEffect } from '../ui/boardEffects'
+import type { DiceAnimationVariant } from '../ui/diceAnimation'
 import {
   getPropertyTotalCost,
   getUpgradeCost,
@@ -35,6 +36,7 @@ interface GameShellProps {
   boardEffect: BoardEffect | null
   onBoardEffectComplete: (effectId: number) => void
   gameSessionId: number
+  diceAnimationVariant: DiceAnimationVariant
 }
 
 export function GameShell({
@@ -52,6 +54,7 @@ export function GameShell({
   boardEffect,
   onBoardEffectComplete,
   gameSessionId,
+  diceAnimationVariant,
 }: GameShellProps) {
   const currentPlayer = state.players.find(
     (player) => player.id === state.currentPlayerId,
@@ -195,6 +198,7 @@ export function GameShell({
         onDiceAnimationComplete={
           onDiceAnimationComplete
         }
+        diceAnimationVariant={diceAnimationVariant}
       />
     </div>
   )
