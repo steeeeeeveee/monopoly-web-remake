@@ -212,7 +212,7 @@ describe('大富翁页面', () => {
     )
 
     act(() => {
-      vi.advanceTimersByTime(419)
+      vi.advanceTimersByTime(899)
     })
     expect(screen.getAllByText('第 0 格')).toHaveLength(2)
 

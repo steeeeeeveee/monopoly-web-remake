@@ -3,7 +3,10 @@ import {
   getDiceFaceSource,
   rollingDiceFrames,
 } from '../ui/visuals'
-import { DICE_ROLL_DURATION_MS } from '../game/constants'
+import {
+  DICE_FRAME_DURATION_MS,
+  DICE_ROLL_DURATION_MS,
+} from '../game/constants'
 
 interface DiceViewProps {
   value: number | null
@@ -47,7 +50,7 @@ export function DiceView({
         (currentFrame) =>
           (currentFrame + 1) % rollingDiceFrames.length,
       )
-    }, 70)
+    }, DICE_FRAME_DURATION_MS)
     const finishTimer = window.setTimeout(() => {
       setShowRollingFrame(false)
       window.clearInterval(frameTimer)

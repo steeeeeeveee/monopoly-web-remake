@@ -1,6 +1,7 @@
 export const DICE_MIN = 1
 export const DICE_MAX = 12
-export const DICE_ROLL_DURATION_MS = 420
+export const DICE_ROLL_DURATION_MS = 900
+export const DICE_FRAME_DURATION_MS = 100
 export const MOVE_STEP_DURATION_MS = 280
 
 export type RandomSource = () => number
