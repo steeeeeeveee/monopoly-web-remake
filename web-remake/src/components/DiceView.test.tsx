@@ -31,10 +31,10 @@ describe('impact dice animation', () => {
       'data-animation-phase',
       'anticipation',
     )
-    expect(finalFace()).toHaveClass(
-      'dice-view__final-face--preloaded',
-    )
+    expect(finalFace()).not.toBeInTheDocument()
     expect(rollingFace()).toBeInTheDocument()
+    expect(container.querySelector('.crystal-die')).toBeInTheDocument()
+    expect(container.querySelector('img')).not.toBeInTheDocument()
 
     act(() => vi.advanceTimersByTime(100))
     expect(dice).toHaveAttribute(
@@ -49,9 +49,7 @@ describe('impact dice animation', () => {
     )
 
     act(() => vi.advanceTimersByTime(139))
-    expect(finalFace()).toHaveClass(
-      'dice-view__final-face--preloaded',
-    )
+    expect(finalFace()).not.toBeInTheDocument()
     expect(rollingFace()).toBeInTheDocument()
 
     act(() => vi.advanceTimersByTime(1))
@@ -59,9 +57,7 @@ describe('impact dice animation', () => {
       'data-animation-phase',
       'impact',
     )
-    expect(finalFace()).not.toHaveClass(
-      'dice-view__final-face--preloaded',
-    )
+    expect(finalFace()).toBeInTheDocument()
     expect(rollingFace()).not.toBeInTheDocument()
     expect(onAnimationComplete).not.toHaveBeenCalled()
 

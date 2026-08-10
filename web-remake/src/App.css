@@ -1425,19 +1425,63 @@ button:focus-visible,
 .dice-view--impact {
   isolation: isolate;
   background:
-    radial-gradient(circle at 50% 34%, #fff 0 28%, transparent 62%),
-    linear-gradient(155deg, #fffdf3, #f1e4bd);
+    radial-gradient(circle at 48% 38%, #1e6e9e 0, #0d2d59 42%, #07152f 78%),
+    #07152f;
   box-shadow:
-    inset 0 0 0 1px rgb(117 79 17 / 12%),
-    0 8px 18px rgb(8 16 33 / 30%);
+    inset 0 0 0 1px rgb(118 235 255 / 30%),
+    inset 0 -10px 18px rgb(3 10 27 / 48%),
+    0 8px 20px rgb(2 9 25 / 42%);
 }
 
-.dice-view--impact img {
-  object-fit: contain;
+.crystal-die {
+  position: relative;
+  z-index: 4;
+  width: 88%;
+  height: 88%;
+  overflow: visible;
   transform-origin: 50% 72%;
-  will-change: transform;
+  filter:
+    drop-shadow(0 2px 1px rgb(3 9 24 / 60%))
+    drop-shadow(0 0 5px rgb(54 220 255 / 38%));
+  will-change: filter, transform;
 }
 
+.crystal-die__value {
+  fill: #102044;
+  stroke: rgb(255 255 255 / 28%);
+  stroke-width: .7px;
+  paint-order: stroke fill;
+  font-family: Inter, "Segoe UI", sans-serif;
+  font-size: 28px;
+  font-weight: 950;
+  letter-spacing: -.08em;
+}
+
+.crystal-die__side-number {
+  fill: #dffbff;
+  font-family: Inter, "Segoe UI", sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  opacity: .82;
+}
+
+.crystal-die__side-number--left {
+  transform: rotate(-18deg);
+  transform-origin: 16px 53px;
+}
+
+.crystal-die__side-number--right {
+  transform: rotate(20deg);
+  transform-origin: 82px 50px;
+}
+
+.crystal-die__side-number--bottom {
+  transform: rotate(7deg);
+  transform-origin: 52px 89px;
+}
+
+.dice-energy-aura,
+.dice-energy-orbit,
 .dice-impact-shadow,
 .dice-impact-ring,
 .dice-impact-spark {
@@ -1446,77 +1490,149 @@ button:focus-visible,
   pointer-events: none;
 }
 
-.dice-view--impact .dice-impact-shadow {
-  z-index: 0;
-  bottom: 7%;
+.dice-view--impact .dice-energy-aura {
+  z-index: 1;
+  top: 50%;
   left: 50%;
-  width: 54%;
-  height: 10%;
+  width: 78%;
+  aspect-ratio: 1;
   display: block;
   border-radius: 50%;
-  background: rgb(43 31 21 / 34%);
+  background:
+    radial-gradient(circle, rgb(89 231 255 / 66%), rgb(34 111 211 / 24%) 46%, transparent 72%);
+  filter: blur(3px);
+  transform: translate(-50%, -50%) scale(.7);
+}
+
+.dice-view--impact .dice-energy-orbit {
+  z-index: 3;
+  top: 49%;
+  left: 50%;
+  width: 92%;
+  height: 38%;
+  border: 1.5px solid rgb(119 241 255 / 74%);
+  border-right-color: transparent;
+  border-left-color: rgb(255 208 82 / 75%);
+  border-radius: 50%;
+}
+
+.dice-energy-orbit--one {
+  transform: translate(-50%, -50%) rotate(17deg);
+}
+
+.dice-energy-orbit--two {
+  transform: translate(-50%, -50%) rotate(-31deg) scale(.78);
+}
+
+.dice-view--impact .dice-impact-shadow {
+  z-index: 0;
+  bottom: 8%;
+  left: 50%;
+  width: 58%;
+  height: 9%;
+  display: block;
+  border-radius: 50%;
+  background: rgb(1 6 17 / 68%);
   filter: blur(2px);
   transform: translateX(-50%);
 }
 
-.dice-view--impact-anticipation .dice-view__rolling-frame {
-  animation: impact-dice-anticipation 100ms ease-in both;
+.dice-view--impact-anticipation .crystal-die {
+  animation: crystal-dice-anticipation 100ms ease-in both;
 }
 
 .dice-view--impact-anticipation .dice-impact-shadow {
-  animation: impact-shadow-anticipation 100ms ease-in both;
+  animation: crystal-shadow-anticipation 100ms ease-in both;
 }
 
-.dice-view--impact-flight .dice-view__rolling-frame {
-  animation: impact-dice-flight 520ms cubic-bezier(.22, .72, .25, 1) both;
+.dice-view--impact-anticipation .dice-energy-aura {
+  animation: crystal-aura-charge 100ms ease-in both;
+}
+
+.dice-view--impact-flight .crystal-die {
+  animation: crystal-dice-flight 520ms cubic-bezier(.22, .72, .25, 1) both;
 }
 
 .dice-view--impact-flight .dice-impact-shadow {
-  animation: impact-shadow-flight 520ms ease-in-out both;
+  animation: crystal-shadow-flight 520ms ease-in-out both;
 }
 
-.dice-view--impact-descent .dice-view__rolling-frame {
-  animation: impact-dice-descent 140ms cubic-bezier(.55, .03, .88, .47) both;
+.dice-view--impact-flight .dice-energy-aura {
+  animation: crystal-aura-flight 260ms ease-in-out infinite alternate;
+}
+
+.dice-view--impact-flight .dice-energy-orbit--one {
+  display: block;
+  animation: crystal-orbit-one 190ms linear infinite;
+}
+
+.dice-view--impact-flight .dice-energy-orbit--two {
+  display: block;
+  animation: crystal-orbit-two 250ms linear infinite reverse;
+}
+
+.dice-view--impact-descent .crystal-die {
+  animation: crystal-dice-descent 140ms cubic-bezier(.55, .03, .88, .47) both;
 }
 
 .dice-view--impact-descent .dice-impact-shadow {
-  animation: impact-shadow-descent 140ms ease-in both;
+  animation: crystal-shadow-descent 140ms ease-in both;
 }
 
-.dice-view--impact-impact .dice-view__final-face {
-  animation: impact-dice-landing 140ms cubic-bezier(.22, .78, .31, 1.22) both;
+.dice-view--impact-descent .dice-energy-aura {
+  animation: crystal-aura-descent 140ms ease-in both;
+}
+
+.dice-view--impact-descent .dice-energy-orbit {
+  display: block;
+  animation: crystal-orbit-collapse 140ms ease-in both;
+}
+
+.dice-view--impact-impact .crystal-die {
+  animation: crystal-dice-landing 140ms cubic-bezier(.22, .78, .31, 1.22) both;
+  filter:
+    drop-shadow(0 3px 1px rgb(1 5 15 / 66%))
+    drop-shadow(0 0 8px rgb(255 207 74 / 74%));
 }
 
 .dice-view--impact-impact .dice-impact-shadow {
-  animation: impact-shadow-landing 140ms ease-out both;
+  animation: crystal-shadow-landing 140ms ease-out both;
+}
+
+.dice-view--impact-impact .dice-energy-aura {
+  animation: crystal-aura-impact 140ms ease-out both;
 }
 
 .dice-view--impact-impact .dice-impact-ring {
   z-index: 1;
-  bottom: 7%;
+  bottom: 9%;
   left: 50%;
-  width: 48%;
+  width: 54%;
   aspect-ratio: 1;
   display: block;
-  border: 3px solid #f3b83e;
+  border: 2px solid #ffd45e;
   border-radius: 50%;
-  box-shadow: 0 0 8px rgb(255 204 79 / 78%);
-  animation: impact-dice-ring 140ms ease-out both;
+  box-shadow:
+    0 0 8px rgb(255 204 79 / 86%),
+    inset 0 0 6px rgb(92 235 255 / 58%);
+  animation: crystal-dice-ring 140ms ease-out both;
 }
 
 .dice-view--impact-impact .dice-impact-spark {
   --spark-x: 0px;
   --spark-y: 0px;
   z-index: 3;
-  top: 61%;
+  top: 59%;
   left: 50%;
   width: 5px;
   height: 5px;
   display: block;
   border-radius: 50%;
-  background: #ffd761;
-  box-shadow: 0 0 5px #ffb72f;
-  animation: impact-dice-spark 140ms ease-out both;
+  background: #f9f5b4;
+  box-shadow:
+    0 0 5px #ffbe35,
+    0 0 8px #4de2ff;
+  animation: crystal-dice-spark 140ms ease-out both;
 }
 
 .dice-impact-spark--1 { --spark-x: -23px; --spark-y: -13px; }
@@ -1526,55 +1642,93 @@ button:focus-visible,
 .dice-impact-spark--5 { --spark-x: 26px; --spark-y: 2px; }
 .dice-impact-spark--6 { --spark-x: 23px; --spark-y: -13px; }
 
-@keyframes impact-dice-anticipation {
+@keyframes crystal-dice-anticipation {
   from { transform: translateY(0) rotate(0) scale(1); }
-  to { transform: translateY(7%) rotate(-9deg) scale(1.06, .82); }
+  to { transform: translateY(8%) rotate(-7deg) scale(1.08, .78); }
 }
 
-@keyframes impact-dice-flight {
-  0% { transform: translateY(7%) rotate(-9deg) scale(1.06, .82); }
-  44% { transform: translateY(-18%) rotate(108deg) scale(.9); }
-  100% { transform: translateY(-12%) rotate(215deg) scale(.94); }
+@keyframes crystal-dice-flight {
+  0% { transform: translateY(8%) rotate(-7deg) scale(1.08, .78); }
+  22% { transform: translate(-7%, -9%) rotate(72deg) scale(.94); }
+  52% { transform: translate(5%, -23%) rotate(176deg) scale(.86); }
+  76% { transform: translate(-3%, -18%) rotate(268deg) scale(.9); }
+  100% { transform: translate(2%, -12%) rotate(348deg) scale(.94); }
 }
 
-@keyframes impact-dice-descent {
-  from { transform: translateY(-12%) rotate(215deg) scale(.94); }
-  to { transform: translateY(7%) rotate(345deg) scale(1.06, .88); }
+@keyframes crystal-dice-descent {
+  from { transform: translate(2%, -12%) rotate(348deg) scale(.94); }
+  to { transform: translateY(8%) rotate(425deg) scale(1.08, .84); }
 }
 
-@keyframes impact-dice-landing {
-  0% { transform: translateY(7%) rotate(-2deg) scale(1.18, .72); }
-  58% { transform: translateY(-6%) rotate(1deg) scale(.92, 1.08); }
+@keyframes crystal-dice-landing {
+  0% { transform: translateY(8%) rotate(-3deg) scale(1.2, .7); }
+  48% { transform: translateY(-8%) rotate(2deg) scale(.9, 1.1); }
+  76% { transform: translateY(2%) rotate(-1deg) scale(1.03, .96); }
   100% { transform: translateY(0) rotate(0) scale(1); }
 }
 
-@keyframes impact-shadow-anticipation {
+@keyframes crystal-shadow-anticipation {
   from { opacity: .32; transform: translateX(-50%) scale(.78); }
   to { opacity: .5; transform: translateX(-50%) scale(1.04); }
 }
 
-@keyframes impact-shadow-flight {
+@keyframes crystal-shadow-flight {
   0% { opacity: .5; transform: translateX(-50%) scale(1.04); }
   44% { opacity: .13; transform: translateX(-50%) scale(.5); }
   100% { opacity: .22; transform: translateX(-50%) scale(.66); }
 }
 
-@keyframes impact-shadow-descent {
+@keyframes crystal-shadow-descent {
   from { opacity: .22; transform: translateX(-50%) scale(.66); }
   to { opacity: .58; transform: translateX(-50%) scale(1.14); }
 }
 
-@keyframes impact-shadow-landing {
+@keyframes crystal-shadow-landing {
   0% { opacity: .68; transform: translateX(-50%) scale(1.22); }
   100% { opacity: .32; transform: translateX(-50%) scale(.82); }
 }
 
-@keyframes impact-dice-ring {
+@keyframes crystal-aura-charge {
+  from { opacity: .22; transform: translate(-50%, -50%) scale(.55); }
+  to { opacity: .86; transform: translate(-50%, -50%) scale(.86); }
+}
+
+@keyframes crystal-aura-flight {
+  from { opacity: .45; transform: translate(-50%, -50%) scale(.72); }
+  to { opacity: .92; transform: translate(-50%, -50%) scale(1.04); }
+}
+
+@keyframes crystal-aura-descent {
+  from { opacity: .72; transform: translate(-50%, -50%) scale(.88); }
+  to { opacity: 1; transform: translate(-50%, -42%) scale(1.2, .72); }
+}
+
+@keyframes crystal-aura-impact {
+  0% { opacity: 1; transform: translate(-50%, -42%) scale(1.25, .7); }
+  100% { opacity: .3; transform: translate(-50%, -50%) scale(.78); }
+}
+
+@keyframes crystal-orbit-one {
+  from { transform: translate(-50%, -50%) rotate(17deg); }
+  to { transform: translate(-50%, -50%) rotate(377deg); }
+}
+
+@keyframes crystal-orbit-two {
+  from { transform: translate(-50%, -50%) rotate(-31deg) scale(.78); }
+  to { transform: translate(-50%, -50%) rotate(329deg) scale(.78); }
+}
+
+@keyframes crystal-orbit-collapse {
+  from { opacity: .82; transform: translate(-50%, -50%) rotate(0) scale(1); }
+  to { opacity: 0; transform: translate(-50%, -50%) rotate(140deg) scale(.28); }
+}
+
+@keyframes crystal-dice-ring {
   0% { opacity: .95; transform: translate(-50%, 34%) scale(.18, .08); }
   100% { opacity: 0; transform: translate(-50%, 34%) scale(1.65, .48); }
 }
 
-@keyframes impact-dice-spark {
+@keyframes crystal-dice-spark {
   0% {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
@@ -2481,7 +2635,9 @@ button:focus-visible,
 
   .dice-impact-shadow,
   .dice-impact-ring,
-  .dice-impact-spark {
+  .dice-impact-spark,
+  .dice-energy-aura,
+  .dice-energy-orbit {
     display: none !important;
   }
 

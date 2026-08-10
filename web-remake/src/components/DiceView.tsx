@@ -12,6 +12,7 @@ import {
   IMPACT_DICE_RESULT_REVEAL_MS,
 } from '../game/constants'
 import type { DiceAnimationVariant } from '../ui/diceAnimation'
+import { CrystalDice } from './CrystalDice'
 
 type ImpactDicePhase =
   | 'idle'
@@ -133,6 +134,12 @@ export function DiceView({
   const rollingImageSource = showRollingFrame
     ? rollingDiceFrames[rollingFrame]
     : null
+  const rollingCrystalValue =
+    ((rollingFrame * 5 + 2) % 12) + 1
+  const crystalValue =
+    impactPhase === 'impact' || impactPhase === 'idle'
+      ? value
+      : rollingCrystalValue
 
   return (
     <div
@@ -150,6 +157,18 @@ export function DiceView({
       {animationVariant === 'impact' && (
         <>
           <span
+            className="dice-energy-aura"
+            aria-hidden="true"
+          />
+          <span
+            className="dice-energy-orbit dice-energy-orbit--one"
+            aria-hidden="true"
+          />
+          <span
+            className="dice-energy-orbit dice-energy-orbit--two"
+            aria-hidden="true"
+          />
+          <span
             className="dice-impact-shadow"
             aria-hidden="true"
           />
@@ -166,9 +185,15 @@ export function DiceView({
               aria-hidden="true"
             />
           ))}
+          <CrystalDice
+            value={crystalValue}
+            layer={
+              showImpactRollingFrame ? 'rolling' : 'final'
+            }
+          />
         </>
       )}
-      {finalImageSource && (
+      {animationVariant === 'classic' && finalImageSource && (
         <img
           className={`dice-view__final-face ${
             showRollingFrame
@@ -181,7 +206,7 @@ export function DiceView({
           aria-hidden="true"
         />
       )}
-      {rollingImageSource && (
+      {animationVariant === 'classic' && rollingImageSource && (
         <img
           className="dice-view__rolling-frame"
           data-dice-layer="rolling"
@@ -190,7 +215,9 @@ export function DiceView({
           aria-hidden="true"
         />
       )}
-      {!finalImageSource && !rollingImageSource && (
+      {animationVariant === 'classic' &&
+        !finalImageSource &&
+        !rollingImageSource && (
         <span aria-hidden="true">?</span>
       )}
     </div>
