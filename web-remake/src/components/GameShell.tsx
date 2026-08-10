@@ -3,6 +3,7 @@ import type {
   GameAction,
   GameState,
   ItemType,
+  Player,
   PlayerId,
 } from '../game/types'
 import { DICE_MAX, DICE_MIN } from '../game/constants'
@@ -60,11 +61,19 @@ export function GameShell({
     return null
   }
 
+  const itemUser = currentPlayer
+
   const leftPlayers = state.players.filter(
     (_, index) => index % 2 === 0,
   )
   const rightPlayers = state.players.filter(
     (_, index) => index % 2 === 1,
+  )
+  const humanPlayers = state.players.filter(
+    (player) => !player.isAI,
+  )
+  const aiPlayers = state.players.filter(
+    (player) => player.isAI,
   )
 
   const currentProperty = state.properties.find(
@@ -103,6 +112,27 @@ export function GameShell({
     dispatch({ type: 'SKIP_PROPERTY' })
   }
 
+  function useItem(item: ItemType) {
+    if (
+      itemUser.isAI ||
+      state.phase !== 'waitingForRoll' ||
+      isDiceAnimating ||
+      itemUser.items[item] <= 0
+    ) {
+      return
+    }
+
+    if (item === 'remote') {
+      dispatch({ type: 'START_REMOTE_DICE' })
+      return
+    }
+
+    dispatch({
+      type: 'START_ITEM_PLACEMENT',
+      item,
+    })
+  }
+
   const decisionTitle =
     state.decision === 'buy'
       ? '购入这块地产？'
@@ -121,6 +151,53 @@ export function GameShell({
       : state.decision === 'upgrade'
         ? 'UPGRADE_PROPERTY'
         : 'ACQUIRE_PROPERTY'
+
+  function renderPlayerCard(player: Player) {
+    return (
+      <PlayerCard
+        key={player.id}
+        player={player}
+        propertyCount={propertyCount(player.id)}
+        isActive={
+          state.phase !== 'gameOver' &&
+          state.currentPlayerId === player.id
+        }
+        moneyResetKey={gameSessionId}
+        canUseItems={
+          player.id === state.currentPlayerId &&
+          !player.isAI &&
+          state.phase === 'waitingForRoll' &&
+          !isDiceAnimating
+        }
+        onUseItem={useItem}
+      />
+    )
+  }
+
+  const boardColumn = (
+    <div className="board-column">
+      <BoardView
+        key={gameSessionId}
+        state={state}
+        dispatch={dispatch}
+        isDiceAnimating={isDiceAnimating}
+        onMoveStepComplete={onMoveStepComplete}
+        boardEffect={boardEffect}
+        onBoardEffectComplete={onBoardEffectComplete}
+      />
+      <ActionDock
+        state={state}
+        currentPlayer={currentPlayer}
+        dispatch={dispatch}
+        onRoll={onRoll}
+        onUseItem={useItem}
+        isDiceAnimating={isDiceAnimating}
+        onDiceAnimationComplete={
+          onDiceAnimationComplete
+        }
+      />
+    </div>
+  )
 
   return (
     <main className="game-screen">
@@ -157,58 +234,34 @@ export function GameShell({
         </div>
       </header>
 
-      <div className="game-layout">
-        <div className="player-rail player-rail--left">
-          {leftPlayers.map((player) => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              propertyCount={propertyCount(player.id)}
-              isActive={
-                state.phase !== 'gameOver' &&
-                state.currentPlayerId === player.id
-              }
-              moneyResetKey={gameSessionId}
-            />
-          ))}
-        </div>
-
-        <div className="board-column">
-          <BoardView
-            key={gameSessionId}
-            state={state}
-            dispatch={dispatch}
-            isDiceAnimating={isDiceAnimating}
-            onMoveStepComplete={onMoveStepComplete}
-            boardEffect={boardEffect}
-            onBoardEffectComplete={onBoardEffectComplete}
-          />
-          <ActionDock
-            state={state}
-            currentPlayer={currentPlayer}
-            dispatch={dispatch}
-            onRoll={onRoll}
-            isDiceAnimating={isDiceAnimating}
-            onDiceAnimationComplete={
-              onDiceAnimationComplete
-            }
-          />
-        </div>
-
-        <div className="player-rail player-rail--right">
-          {rightPlayers.map((player) => (
-            <PlayerCard
-              key={player.id}
-              player={player}
-              propertyCount={propertyCount(player.id)}
-              isActive={
-                state.phase !== 'gameOver' &&
-                state.currentPlayerId === player.id
-              }
-              moneyResetKey={gameSessionId}
-            />
-          ))}
-        </div>
+      <div
+        className={`game-layout ${
+          state.mode === 'multiplayer'
+            ? 'game-layout--multiplayer'
+            : ''
+        }`}
+      >
+        {state.mode === 'multiplayer' ? (
+          <>
+            <div className="multiplayer-player-row multiplayer-player-row--human">
+              {humanPlayers.map(renderPlayerCard)}
+            </div>
+            {boardColumn}
+            <div className="multiplayer-player-row multiplayer-player-row--ai">
+              {aiPlayers.map(renderPlayerCard)}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="player-rail player-rail--left">
+              {leftPlayers.map(renderPlayerCard)}
+            </div>
+            {boardColumn}
+            <div className="player-rail player-rail--right">
+              {rightPlayers.map(renderPlayerCard)}
+            </div>
+          </>
+        )}
       </div>
 
       <GameModal

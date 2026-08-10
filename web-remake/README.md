@@ -1,32 +1,61 @@
-# React + TypeScript + Vite
+# 大富翁网页版
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+这是一个使用 React、TypeScript 和 DOM/CSS Grid 重制的大富翁网页游戏。项目以原 Cocos Creator 工程的 52 格棋盘和玩法为参考，重新设计了适合电脑和手机浏览器的界面。
 
-Currently, two official plugins are available:
+## 已有模式
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- 双人同屏：两名真人玩家轮流操作。
+- 单人挑战电脑：一名真人玩家对战一名 AI。
+- 四人混战：两名真人玩家与两名 AI 同局游戏。
 
-## React Compiler
+## 核心玩法
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 1–12 点骰子、逐格跳跃移动和经过起点奖励。
+- 地产购买、五级升级、租金、相邻地产加成、破产和胜负判定。
+- 金币、商店、事件、监狱和医院格。
+- 炸弹、遥控骰子和蛛网道具。
+- 迷惑、资产变化、陨石炸房和强制收购随机事件。
+- 骰子、棋子、金币、陷阱和爆炸动画。
+- 键盘操作、弹窗焦点管理、减少动态效果和手机响应式布局。
 
-## Expanding the Oxlint configuration
+## 主要规则
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- 初始资金：5000 金币。
+- 经过起点：奖励 200 金币。
+- 地产价格：1000 金币，最高 5 级。
+- 升级费用：500 / 750 / 750 / 1000 金币。
+- 基础租金：500 / 1000 / 1500 / 2250 / 4000 金币。
+- 资金低于 -2000 时破产并释放全部地产。
+- 最后仍未破产的玩家获胜。
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## 本地运行
+
+需要先安装 Node.js，然后在本目录执行：
+
+```powershell
+npm.cmd install
+npm.cmd run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+终端显示本地地址后，在浏览器打开 `http://localhost:5173/`。
+
+## 项目检查
+
+```powershell
+npm.cmd test
+npm.cmd run lint
+npm.cmd run build
+```
+
+## 目录说明
+
+- `src/game/`：规则、状态、AI 和棋盘数据。
+- `src/components/`：页面、棋盘、玩家面板、弹窗和交互组件。
+- `src/ui/`：棋子布局、视觉映射和棋盘动画序列。
+- `public/`：骰子等静态素材。
+
+## 当前限制
+
+- 没有账号、后端、联网对战和存档功能。
+- 刷新网页会重新开始游戏。
+- 当前部署应保持私密；公开发布前仍需确认所有外部素材的授权。

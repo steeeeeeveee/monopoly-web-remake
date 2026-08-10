@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { getPawnLayout } from './pawnLayout'
 
 describe('棋子同格布局', () => {
-  it('单个棋子占格子的百分之七十并居中', () => {
+  it('单个棋子占格子的百分之八十并居中', () => {
     expect(getPawnLayout(1, 0)).toEqual({
-      sizePercent: 70,
+      sizePercent: 80,
       centerXPercent: 50,
       centerYPercent: 50,
     })

@@ -41,7 +41,7 @@ function renderBoard(
 }
 
 describe('棋盘棋子层', () => {
-  it('单个棋子使用百分之七十尺寸，同格后使用百分之四十四', () => {
+  it('单个棋子使用百分之八十尺寸，同格后使用百分之四十四', () => {
     const separatedState: GameState = {
       ...createInitialGameState(),
       players: createInitialGameState().players.map((player) =>
@@ -54,7 +54,7 @@ describe('棋盘棋子层', () => {
       .closest('.pawn-slot') as HTMLElement
 
     expect(singleSlot.style.getPropertyValue('--pawn-size'))
-      .toBe('70%')
+      .toBe('80%')
 
     view.rerender(
       <BoardView

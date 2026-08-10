@@ -1,5 +1,9 @@
 import type { CSSProperties } from 'react'
-import type { Player, PlayerInventory } from '../game/types'
+import type {
+  ItemType,
+  Player,
+  PlayerInventory,
+} from '../game/types'
 import { AnimatedMoney } from './AnimatedMoney'
 import { GameIcon, PawnIcon } from './GameIcon'
 
@@ -8,27 +12,47 @@ interface PlayerCardProps {
   propertyCount: number
   isActive: boolean
   moneyResetKey: number
+  canUseItems: boolean
+  onUseItem: (item: ItemType) => void
 }
 
 interface InventoryItemProps {
   type: keyof PlayerInventory
   count: number
   label: string
+  playerName: string
+  canUse: boolean
+  onUse: (item: ItemType) => void
 }
 
 function InventoryItem({
   type,
   count,
   label,
+  playerName,
+  canUse,
+  onUse,
 }: InventoryItemProps) {
+  const isEnabled = canUse && count > 0
+
   return (
-    <span
-      className="inventory-chip"
-      title={`${label} ${count} 个`}
+    <button
+      className={`inventory-chip ${
+        isEnabled ? 'inventory-chip--usable' : ''
+      }`}
+      type="button"
+      disabled={!isEnabled}
+      aria-label={`${playerName}使用${label}，剩余 ${count} 个`}
+      title={
+        isEnabled
+          ? `使用${label}`
+          : `${label} ${count} 个`
+      }
+      onClick={() => onUse(type)}
     >
       <GameIcon name={type} />
       <span>{count}</span>
-    </span>
+    </button>
   )
 }
 
@@ -37,6 +61,8 @@ export function PlayerCard({
   propertyCount,
   isActive,
   moneyResetKey,
+  canUseItems,
+  onUseItem,
 }: PlayerCardProps) {
   const statusText = player.bankrupt
     ? '已破产'
@@ -50,7 +76,9 @@ export function PlayerCard({
     <article
       className={`player-card ${
         isActive ? 'player-card--active' : ''
-      } ${player.bankrupt ? 'player-card--bankrupt' : ''}`}
+      } ${player.bankrupt ? 'player-card--bankrupt' : ''} ${
+        canUseItems ? 'player-card--items-usable' : ''
+      }`}
       style={{
         '--player-color': player.color,
       } as CSSProperties}
@@ -106,16 +134,25 @@ export function PlayerCard({
           type="bomb"
           count={player.items.bomb}
           label="炸弹"
+          playerName={player.name}
+          canUse={canUseItems}
+          onUse={onUseItem}
         />
         <InventoryItem
           type="remote"
           count={player.items.remote}
           label="遥控骰子"
+          playerName={player.name}
+          canUse={canUseItems}
+          onUse={onUseItem}
         />
         <InventoryItem
           type="web"
           count={player.items.web}
           label="蛛网"
+          playerName={player.name}
+          canUse={canUseItems}
+          onUse={onUseItem}
         />
       </div>
 

@@ -5,7 +5,7 @@ export interface PawnLayout {
 }
 
 const singlePawnLayout: PawnLayout = {
-  sizePercent: 70,
+  sizePercent: 80,
   centerXPercent: 50,
   centerYPercent: 50,
 }

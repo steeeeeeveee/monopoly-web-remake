@@ -6,6 +6,7 @@ import {
 import type {
   GameAction,
   GameState,
+  ItemType,
   Player,
 } from '../game/types'
 import { DiceView } from './DiceView'
@@ -16,6 +17,7 @@ interface ActionDockProps {
   currentPlayer: Player
   dispatch: Dispatch<GameAction>
   onRoll: () => void
+  onUseItem: (item: ItemType) => void
   isDiceAnimating: boolean
   onDiceAnimationComplete: () => void
 }
@@ -25,6 +27,7 @@ export function ActionDock({
   currentPlayer,
   dispatch,
   onRoll,
+  onUseItem,
   isDiceAnimating,
   onDiceAnimationComplete,
 }: ActionDockProps) {
@@ -101,12 +104,7 @@ export function ActionDock({
                 <button
                   className="icon-action"
                   type="button"
-                  onClick={() =>
-                    dispatch({
-                      type: 'START_ITEM_PLACEMENT',
-                      item: 'bomb',
-                    })
-                  }
+                  onClick={() => onUseItem('bomb')}
                   title="使用炸弹"
                 >
                   <GameIcon name="bomb" />
@@ -117,9 +115,7 @@ export function ActionDock({
                 <button
                   className="icon-action"
                   type="button"
-                  onClick={() =>
-                    dispatch({ type: 'START_REMOTE_DICE' })
-                  }
+                  onClick={() => onUseItem('remote')}
                   title="使用遥控骰子"
                 >
                   <GameIcon name="remote" />
@@ -130,12 +126,7 @@ export function ActionDock({
                 <button
                   className="icon-action"
                   type="button"
-                  onClick={() =>
-                    dispatch({
-                      type: 'START_ITEM_PLACEMENT',
-                      item: 'web',
-                    })
-                  }
+                  onClick={() => onUseItem('web')}
                   title="使用蛛网"
                 >
                   <GameIcon name="web" />
