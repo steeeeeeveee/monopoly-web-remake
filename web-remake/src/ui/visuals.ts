@@ -26,7 +26,7 @@ export const functionalIconSources = {
 export const rollingDiceFrames = Array.from(
   { length: 6 },
   (_, index) =>
-    `/game-assets/dice/rolling/摇动${index + 1}.png`,
+    `/game-assets/dice/rolling/rolling-${index + 1}.png`,
 )
 
 export function getDiceFaceSource(value: number): string {

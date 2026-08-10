@@ -20,8 +20,8 @@ describe('视觉素材映射', () => {
 
   it('保留六张原作摇动序列帧', () => {
     expect(rollingDiceFrames).toHaveLength(6)
-    expect(rollingDiceFrames[0]).toContain('摇动1.png')
-    expect(rollingDiceFrames[5]).toContain('摇动6.png')
+    expect(rollingDiceFrames[0]).toContain('rolling-1.png')
+    expect(rollingDiceFrames[5]).toContain('rolling-6.png')
   })
 
   it('按规则把等级映射成三档房屋', () => {
