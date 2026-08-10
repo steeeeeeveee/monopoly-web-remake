@@ -120,9 +120,9 @@ function createPlayers(mode: GameMode): Player[] {
       inJail: false,
       jailTurnsLeft: 0,
       items: {
-        bomb: 0,
-        remote: 0,
-        web: 0,
+        bomb: 10,
+        remote: 10,
+        web: 10,
       },
       confusedTurns: 0,
       hasForcedAcquisition: false,
@@ -138,9 +138,9 @@ function createPlayers(mode: GameMode): Player[] {
       inJail: false,
       jailTurnsLeft: 0,
       items: {
-        bomb: 0,
-        remote: 0,
-        web: 0,
+        bomb: 10,
+        remote: 10,
+        web: 10,
       },
       confusedTurns: 0,
       hasForcedAcquisition: false,
@@ -355,42 +355,6 @@ function resolveLanding(state: GameState): GameState {
 
   if (!tile) {
     return finishTurn(state)
-  }
-
-  const tileEffect = state.tileEffects.find(
-    (effect) => effect.tileIndex === tile.index,
-  )
-
-  if (tileEffect?.hasBomb) {
-    const tileEffects = state.tileEffects.map((effect) =>
-      effect.tileIndex === tile.index
-        ? {
-            ...effect,
-            hasBomb: false,
-          }
-        : effect,
-    )
-
-    const players = state.players.map((player) =>
-      player.id === currentPlayer.id
-        ? {
-            ...player,
-            position: 35,
-            inJail: true,
-            jailTurnsLeft: 1,
-          }
-        : player,
-    )
-
-    return finishTurn({
-      ...state,
-      players,
-      tileEffects,
-      log: addLog(
-        state.log,
-        `${currentPlayer.name} 踩到炸弹，被送往第 35 格医院并住院一回合`,
-      ),
-    })
   }
 
   if (tile.kind === 'gold') {
@@ -734,26 +698,28 @@ export function gameReducer(
           effect.tileIndex === nextPosition,
       )
 
-      if (tileEffect?.hasWeb) {
-        const tileEffects = state.tileEffects.map(
-          (effect) =>
-            effect.tileIndex === nextPosition
-              ? {
-                  ...effect,
-                  hasWeb: false,
-                }
-              : effect,
-        )
+      const isStoppedByWeb = Boolean(tileEffect?.hasWeb)
+      const isLandingOnBomb = Boolean(
+        tileEffect?.hasBomb &&
+          (isStoppedByWeb || remainingQueue.length === 0),
+      )
 
-        return resolveLanding({
+      if (isStoppedByWeb || isLandingOnBomb) {
+        const playerName =
+          state.players[state.currentPlayerId]?.name ?? '玩家'
+        const trapMessage = isStoppedByWeb
+          ? isLandingOnBomb
+            ? `${playerName} 被蛛网拦住，并触发了同格的炸弹`
+            : `${playerName} 被蛛网拦住，停在第 ${nextPosition} 格`
+          : `${playerName} 踩中了第 ${nextPosition} 格的炸弹`
+
+        return {
           ...movedState,
-          tileEffects,
+          phase: 'resolvingTileEffect',
+          decision: null,
           movementQueue: [],
-          log: addLog(
-            movedState.log,
-            `${state.players[state.currentPlayerId]?.name ?? '玩家'} 被蛛网拦住，停在第 ${nextPosition} 格`,
-          ),
-        })
+          log: addLog(movedState.log, trapMessage),
+        }
       }
 
       if (remainingQueue.length > 0) {
@@ -909,6 +875,69 @@ export function gameReducer(
       return finishTurn({
         ...state,
         log: addLog(state.log, '放弃本次操作'),
+      })
+    }
+
+    case 'RESOLVE_TILE_EFFECTS': {
+      if (state.phase !== 'resolvingTileEffect') {
+        return state
+      }
+
+      const currentPlayer = state.players.find(
+        (player) => player.id === state.currentPlayerId,
+      )
+
+      if (!currentPlayer) {
+        return state
+      }
+
+      const tileEffect = state.tileEffects.find(
+        (effect) =>
+          effect.tileIndex === currentPlayer.position,
+      )
+      const hasWeb = Boolean(tileEffect?.hasWeb)
+      const hasBomb = Boolean(tileEffect?.hasBomb)
+
+      if (!hasWeb && !hasBomb) {
+        return resolveLanding(state)
+      }
+
+      const tileEffects = state.tileEffects.map((effect) =>
+        effect.tileIndex === currentPlayer.position
+          ? {
+              ...effect,
+              hasBomb: hasBomb ? false : effect.hasBomb,
+              hasWeb: hasWeb ? false : effect.hasWeb,
+            }
+          : effect,
+      )
+
+      if (hasBomb) {
+        const players = state.players.map((player) =>
+          player.id === currentPlayer.id
+            ? {
+                ...player,
+                position: 35,
+                inJail: true,
+                jailTurnsLeft: 1,
+              }
+            : player,
+        )
+
+        return finishTurn({
+          ...state,
+          players,
+          tileEffects,
+          log: addLog(
+            state.log,
+            `${currentPlayer.name} 被炸弹送往第 35 格医院并住院一回合`,
+          ),
+        })
+      }
+
+      return resolveLanding({
+        ...state,
+        tileEffects,
       })
     }
 

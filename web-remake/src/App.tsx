@@ -22,13 +22,27 @@ import type {
   ItemType,
   PlayerId,
 } from './game/types'
-import type { BoardEffect } from './ui/boardEffects'
+import {
+  createEventExplosionSequence,
+  createTrapEffectSequence,
+  type BoardEffect,
+  type BoardEffectSpec,
+} from './ui/boardEffects'
 import './App.css'
 
 type RandomEventAction = Extract<
   GameAction,
   { type: 'RESOLVE_RANDOM_EVENT' }
 >
+
+type TileEffectResolutionAction = Extract<
+  GameAction,
+  { type: 'RESOLVE_TILE_EFFECTS' }
+>
+
+type DeferredBoardAction =
+  | RandomEventAction
+  | TileEffectResolutionAction
 
 function App() {
   const [gameStarted, setGameStarted] = useState(false)
@@ -37,10 +51,12 @@ function App() {
     useState(false)
   const [boardEffect, setBoardEffect] =
     useState<BoardEffect | null>(null)
-  const pendingEventActionRef =
-    useRef<RandomEventAction | null>(null)
+  const boardEffectQueueRef = useRef<BoardEffect[]>([])
+  const deferredBoardActionRef =
+    useRef<DeferredBoardAction | null>(null)
   const activeBoardEffectRef =
     useRef<BoardEffect | null>(null)
+  const resolvingTrapKeyRef = useRef<string | null>(null)
   const nextBoardEffectIdRef = useRef(0)
   const [gameState, dispatch] = useReducer(
     gameReducer,
@@ -69,6 +85,40 @@ function App() {
     dispatch({ type: 'MOVE_ONE_STEP' })
   }, [])
 
+  const materializeBoardEffects = useCallback(
+    (specs: BoardEffectSpec[]): BoardEffect[] =>
+      specs.map((spec) => {
+        const id = nextBoardEffectIdRef.current
+        nextBoardEffectIdRef.current += 1
+        return { ...spec, id } as BoardEffect
+      }),
+    [],
+  )
+
+  const startBoardEffectSequence = useCallback(
+    (
+      effects: BoardEffect[],
+      finalAction: DeferredBoardAction,
+    ) => {
+      if (activeBoardEffectRef.current) return false
+
+      if (effects.length === 0) {
+        dispatch(finalAction)
+        return true
+      }
+
+      const [firstEffect, ...remainingEffects] = effects
+      if (!firstEffect) return false
+
+      boardEffectQueueRef.current = remainingEffects
+      deferredBoardActionRef.current = finalAction
+      activeBoardEffectRef.current = firstEffect
+      setBoardEffect(firstEffect)
+      return true
+    },
+    [],
+  )
+
   const beginRandomEvent = useCallback(
     (action: RandomEventAction) => {
       if (activeBoardEffectRef.current) return
@@ -81,26 +131,33 @@ function App() {
         return
       }
 
-      const effectId = nextBoardEffectIdRef.current
-      nextBoardEffectIdRef.current += 1
-      pendingEventActionRef.current = action
-      const effect: BoardEffect = {
-        id: effectId,
-        kind: 'meteor',
-        tileIndex: action.propertyTileIndex,
-      }
-      activeBoardEffectRef.current = effect
-      setBoardEffect(effect)
+      startBoardEffectSequence(
+        materializeBoardEffects(
+          createEventExplosionSequence(
+            action.propertyTileIndex,
+          ),
+        ),
+        action,
+      )
     },
-    [],
+    [materializeBoardEffects, startBoardEffectSequence],
   )
 
   const finishBoardEffect = useCallback((effectId: number) => {
     if (activeBoardEffectRef.current?.id !== effectId) return
 
-    const pendingAction = pendingEventActionRef.current
-    pendingEventActionRef.current = null
+    const nextEffect = boardEffectQueueRef.current.shift()
+
+    if (nextEffect) {
+      activeBoardEffectRef.current = nextEffect
+      setBoardEffect(nextEffect)
+      return
+    }
+
+    const pendingAction = deferredBoardActionRef.current
+    deferredBoardActionRef.current = null
     activeBoardEffectRef.current = null
+    resolvingTrapKeyRef.current = null
     setBoardEffect(null)
     if (pendingAction) dispatch(pendingAction)
   }, [])
@@ -176,6 +233,7 @@ function App() {
       !aiPlayer?.isAI ||
       boardEffect !== null ||
       gameState.phase === 'moving' ||
+      gameState.phase === 'resolvingTileEffect' ||
       gameState.phase === 'awaitingShop' ||
       gameState.phase === 'gameOver'
     ) {
@@ -205,9 +263,59 @@ function App() {
     gameState,
   ])
 
+  useEffect(() => {
+    if (
+      !gameStarted ||
+      gameState.phase !== 'resolvingTileEffect' ||
+      activeBoardEffectRef.current
+    ) {
+      return
+    }
+
+    const player = gameState.players.find(
+      (candidate) =>
+        candidate.id === gameState.currentPlayerId,
+    )
+    if (!player) return
+
+    const tileEffect = gameState.tileEffects.find(
+      (effect) => effect.tileIndex === player.position,
+    )
+    const trapKey = `${gameSessionId}:${player.id}:${player.position}:${Boolean(
+      tileEffect?.hasWeb,
+    )}:${Boolean(tileEffect?.hasBomb)}`
+
+    if (resolvingTrapKeyRef.current === trapKey) return
+    resolvingTrapKeyRef.current = trapKey
+
+    const effects = materializeBoardEffects(
+      createTrapEffectSequence(
+        player.position,
+        player.id,
+        Boolean(tileEffect?.hasWeb),
+        Boolean(tileEffect?.hasBomb),
+      ),
+    )
+
+    startBoardEffectSequence(effects, {
+      type: 'RESOLVE_TILE_EFFECTS',
+    })
+  }, [
+    gameSessionId,
+    gameStarted,
+    gameState.currentPlayerId,
+    gameState.phase,
+    gameState.players,
+    gameState.tileEffects,
+    materializeBoardEffects,
+    startBoardEffectSequence,
+  ])
+
   function clearDisplayEffects() {
-    pendingEventActionRef.current = null
+    boardEffectQueueRef.current = []
+    deferredBoardActionRef.current = null
     activeBoardEffectRef.current = null
+    resolvingTrapKeyRef.current = null
     setBoardEffect(null)
   }
 

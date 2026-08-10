@@ -403,6 +403,17 @@ describe('金币与监狱', () => {
 })
 
 describe('商店与背包', () => {
+  it('所有玩家的三种初始道具数量都是 10', () => {
+    const state = createInitialGameState()
+
+    expect(
+      state.players.map((player) => player.items),
+    ).toEqual([
+      { bomb: 10, remote: 10, web: 10 },
+      { bomb: 10, remote: 10, web: 10 },
+    ])
+  })
+
   it('进入商店后抽取道具并加入当前玩家背包', () => {
     let state = createInitialGameState()
 
@@ -433,9 +444,9 @@ describe('商店与背包', () => {
     )
 
     expect(playerOne?.items).toEqual({
-      bomb: 0,
-      remote: 0,
-      web: 1,
+      bomb: 10,
+      remote: 10,
+      web: 11,
     })
     expect(state.phase).toBe('waitingForRoll')
     expect(state.currentPlayerId).toBe(1)
@@ -497,7 +508,7 @@ describe('道具使用', () => {
     expect(state.phase).toBe('awaitingDecision')
   })
 
-  it('放置的炸弹会把停在该格的玩家送往医院', () => {
+  it('炸弹动画结算前保留玩家位置和陷阱，结算后送往医院', () => {
     let state = createInitialGameState()
 
     state = {
@@ -533,6 +544,15 @@ describe('道具使用', () => {
     }
     state = rollAndFinish(state, 2)
 
+    expect(state.phase).toBe('resolvingTileEffect')
+    expect(state.players[1]?.position).toBe(2)
+    expect(state.players[1]?.inJail).toBe(false)
+    expect(state.tileEffects[2]?.hasBomb).toBe(true)
+
+    state = gameReducer(state, {
+      type: 'RESOLVE_TILE_EFFECTS',
+    })
+
     const playerTwo = state.players.find(
       (player) => player.id === 1,
     )
@@ -544,7 +564,7 @@ describe('道具使用', () => {
     expect(state.log[0]).toContain('第 35 格医院')
   })
 
-  it('蛛网会在移动途中拦住玩家并在触发后消失', () => {
+  it('蛛网会在移动途中拦住玩家并在动画结算后消失', () => {
     let state = createInitialGameState()
 
     state = {
@@ -578,9 +598,75 @@ describe('道具使用', () => {
     state = finishMovement(state)
 
     expect(state.players[0]?.position).toBe(2)
-    expect(state.tileEffects[2]?.hasWeb).toBe(false)
+    expect(state.tileEffects[2]?.hasWeb).toBe(true)
     expect(state.movementQueue).toEqual([])
+    expect(state.phase).toBe('resolvingTileEffect')
+
+    state = gameReducer(state, {
+      type: 'RESOLVE_TILE_EFFECTS',
+    })
+
+    expect(state.tileEffects[2]?.hasWeb).toBe(false)
     expect(state.phase).toBe('awaitingDecision')
+  })
+
+  it('同格蛛网和炸弹会一起等待动画并在结算后送医', () => {
+    const initialState = createInitialGameState()
+    let state: GameState = {
+      ...initialState,
+      tileEffects: initialState.tileEffects.map((effect) =>
+        effect.tileIndex === 2
+          ? { ...effect, hasBomb: true, hasWeb: true }
+          : effect,
+      ),
+    }
+
+    state = rollAndFinish(state, 6)
+
+    expect(state.phase).toBe('resolvingTileEffect')
+    expect(state.players[0]?.position).toBe(2)
+    expect(state.tileEffects[2]).toMatchObject({
+      hasBomb: true,
+      hasWeb: true,
+    })
+
+    state = gameReducer(state, {
+      type: 'RESOLVE_TILE_EFFECTS',
+    })
+
+    expect(state.players[0]?.position).toBe(35)
+    expect(state.players[0]?.inJail).toBe(true)
+    expect(state.tileEffects[2]).toMatchObject({
+      hasBomb: false,
+      hasWeb: false,
+    })
+  })
+
+  it('经过只有炸弹的格子不会触发炸弹', () => {
+    const initialState = createInitialGameState()
+    let state: GameState = {
+      ...initialState,
+      tileEffects: initialState.tileEffects.map((effect) =>
+        effect.tileIndex === 2
+          ? { ...effect, hasBomb: true }
+          : effect,
+      ),
+    }
+
+    state = rollAndFinish(state, 3)
+
+    expect(state.players[0]?.position).toBe(3)
+    expect(state.phase).toBe('waitingForRoll')
+    expect(state.tileEffects[2]?.hasBomb).toBe(true)
+  })
+
+  it('非陷阱结算阶段不能提前移除陷阱', () => {
+    const state = createInitialGameState()
+    const nextState = gameReducer(state, {
+      type: 'RESOLVE_TILE_EFFECTS',
+    })
+
+    expect(nextState).toBe(state)
   })
 })
 

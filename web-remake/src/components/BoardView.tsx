@@ -18,8 +18,7 @@ import type {
   PlayerId,
 } from '../game/types'
 import {
-  METEOR_EFFECT_DURATION_MS,
-  REDUCED_METEOR_EFFECT_DURATION_MS,
+  getBoardEffectDuration,
   type BoardEffect,
 } from '../ui/boardEffects'
 import { getPawnLayout } from '../ui/pawnLayout'
@@ -399,9 +398,10 @@ export function BoardView({
   useEffect(() => {
     if (!boardEffect) return
 
-    const duration = prefersReducedMotion()
-      ? REDUCED_METEOR_EFFECT_DURATION_MS
-      : METEOR_EFFECT_DURATION_MS
+    const duration = getBoardEffectDuration(
+      boardEffect,
+      prefersReducedMotion(),
+    )
     const effectId = boardEffect.id
 
     effectTimerRef.current = window.setTimeout(() => {
@@ -440,6 +440,13 @@ export function BoardView({
             tileEffect?.hasBomb) ||
           (state.placementItem === 'web' &&
             tileEffect?.hasWeb)
+        const isActiveWebTrap =
+          boardEffect?.kind === 'webCapture' &&
+          boardEffect.tileIndex === tile.index
+        const isActiveBombTrap =
+          boardEffect?.kind === 'explosion' &&
+          boardEffect.source === 'trap' &&
+          boardEffect.tileIndex === tile.index
         const rent = property
           ? getPropertyRent(property, state.properties)
           : 0
@@ -475,7 +482,12 @@ export function BoardView({
               canPlace ? 'board-tile--selectable' : ''
             } ${placementBlocked ? 'board-tile--blocked' : ''} ${
               boardEffect?.tileIndex === tile.index
-                ? 'board-tile--meteor-target'
+                ? 'board-tile--effect-target'
+                : ''
+            } ${
+              boardEffect?.kind === 'explosion' &&
+              boardEffect.tileIndex === tile.index
+                ? 'board-tile--explosion-target'
                 : ''
             }`}
             key={tile.index}
@@ -532,12 +544,16 @@ export function BoardView({
             )}
             {(tileEffect?.hasBomb ||
               tileEffect?.hasWeb) && (
-              <span className="tile-effect-icons">
-                {tileEffect.hasBomb && (
-                  <GameIcon name="bomb" title="炸弹" />
+              <span className="tile-trap-layer">
+                {tileEffect.hasWeb && !isActiveWebTrap && (
+                  <span className="tile-trap tile-trap--web">
+                    <GameIcon name="web" title="蛛网" />
+                  </span>
                 )}
-                {tileEffect.hasWeb && (
-                  <GameIcon name="web" title="蛛网" />
+                {tileEffect.hasBomb && !isActiveBombTrap && (
+                  <span className="tile-trap tile-trap--bomb">
+                    <GameIcon name="bomb" title="炸弹" />
+                  </span>
                 )}
               </span>
             )}
@@ -571,6 +587,13 @@ export function BoardView({
             state.phase === 'moving' &&
             state.currentPlayerId === player.id &&
             state.movementDirection === -1
+          const isWebCaptureTarget =
+            boardEffect?.kind === 'webCapture' &&
+            boardEffect.playerId === player.id
+          const isTrapExplosionTarget =
+            boardEffect?.kind === 'explosion' &&
+            boardEffect.source === 'trap' &&
+            boardEffect.playerId === player.id
 
           return (
             <span
@@ -579,7 +602,15 @@ export function BoardView({
               style={style}
             >
               <span
-                className="pawn-motion"
+                className={`pawn-motion ${
+                  isWebCaptureTarget
+                    ? 'pawn-motion--web-captured'
+                    : ''
+                } ${
+                  isTrapExplosionTarget
+                    ? 'pawn-motion--explosion-target'
+                    : ''
+                }`}
                 ref={(element) => {
                   if (element) {
                     pawnRefs.current.set(player.id, element)
@@ -607,27 +638,98 @@ export function BoardView({
         <div
           className="board-effect-layer"
           role="status"
-          aria-label="炸弹正在摧毁地产"
+          aria-label={
+            boardEffect.kind === 'webCapture'
+              ? '蛛网正在缠住玩家'
+              : boardEffect.kind === 'eventBombDrop'
+                ? '事件炸弹正在坠落'
+                : boardEffect.source === 'event'
+                  ? '炸弹正在摧毁地产'
+                  : '玩家踩中的炸弹正在爆炸'
+          }
         >
-          <span
-            className="meteor-effect"
-            style={{
-              gridColumn: effectTile.column,
-              gridRow: effectTile.row,
-            }}
-          >
-            <span className="meteor-effect__shadow" />
-            <span className="meteor-effect__bomb">
-              <GameIcon name="bomb" />
+          {boardEffect.kind === 'webCapture' && (
+            <span
+              className="web-capture-effect"
+              style={{
+                gridColumn: effectTile.column,
+                gridRow: effectTile.row,
+              }}
+            >
+              <span className="web-capture-effect__net">
+                <GameIcon name="web" />
+              </span>
+              {[-32, 24, 78, 138].map((angle) => (
+                <span
+                  className="web-capture-effect__strand"
+                  key={angle}
+                  style={{
+                    '--strand-angle': `${angle}deg`,
+                  } as CSSProperties}
+                />
+              ))}
+              <span className="web-capture-effect__glint" />
             </span>
-            <span className="meteor-effect__flash" />
-            <span className="meteor-effect__ring" />
-            <span className="meteor-effect__smoke meteor-effect__smoke--one" />
-            <span className="meteor-effect__smoke meteor-effect__smoke--two" />
-            <span className="meteor-effect__debris meteor-effect__debris--one" />
-            <span className="meteor-effect__debris meteor-effect__debris--two" />
-            <span className="meteor-effect__debris meteor-effect__debris--three" />
-          </span>
+          )}
+
+          {boardEffect.kind === 'eventBombDrop' && (
+            <span
+              className="event-bomb-drop"
+              style={{
+                gridColumn: effectTile.column,
+                gridRow: effectTile.row,
+              }}
+            >
+              <span className="event-bomb-drop__shadow" />
+              <span className="event-bomb-drop__trail event-bomb-drop__trail--one" />
+              <span className="event-bomb-drop__trail event-bomb-drop__trail--two" />
+              <span className="event-bomb-drop__bomb">
+                <GameIcon name="bomb" />
+              </span>
+            </span>
+          )}
+
+          {boardEffect.kind === 'explosion' && (
+            <span
+              className={`explosion-effect explosion-effect--${boardEffect.source}`}
+              style={{
+                gridColumn: effectTile.column,
+                gridRow: effectTile.row,
+              }}
+            >
+              <span className="explosion-effect__flash" />
+              <span className="explosion-effect__fireball explosion-effect__fireball--outer" />
+              <span className="explosion-effect__fireball explosion-effect__fireball--inner" />
+              <span className="explosion-effect__ring explosion-effect__ring--one" />
+              <span className="explosion-effect__ring explosion-effect__ring--two" />
+              {Array.from({ length: 10 }, (_, index) => (
+                <span
+                  className="explosion-effect__spark"
+                  key={`spark-${index}`}
+                  style={{
+                    '--spark-angle': `${index * 36}deg`,
+                    '--spark-delay': `${index * 9}ms`,
+                  } as CSSProperties}
+                />
+              ))}
+              {Array.from({ length: 6 }, (_, index) => (
+                <span
+                  className="explosion-effect__debris"
+                  key={`debris-${index}`}
+                  style={{
+                    '--debris-angle': `${index * 60 + 18}deg`,
+                    '--debris-delay': `${index * 12}ms`,
+                  } as CSSProperties}
+                />
+              ))}
+              {Array.from({ length: 5 }, (_, index) => (
+                <span
+                  className={`explosion-effect__smoke explosion-effect__smoke--${index + 1}`}
+                  key={`smoke-${index}`}
+                />
+              ))}
+            </span>
+          )}
         </div>
       )}
     </section>

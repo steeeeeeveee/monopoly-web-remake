@@ -7,6 +7,7 @@ import {
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createInitialGameState } from '../game/gameReducer'
 import type { GameState } from '../game/types'
+import type { BoardEffect } from '../ui/boardEffects'
 import { BoardView } from './BoardView'
 
 afterEach(() => {
@@ -20,6 +21,7 @@ function renderBoard(
     isDiceAnimating?: boolean
     onMoveStepComplete?: () => void
     onBoardEffectComplete?: (effectId: number) => void
+    boardEffect?: BoardEffect | null
   } = {},
 ) {
   return render(
@@ -30,7 +32,7 @@ function renderBoard(
       onMoveStepComplete={
         options.onMoveStepComplete ?? vi.fn()
       }
-      boardEffect={null}
+      boardEffect={options.boardEffect ?? null}
       onBoardEffectComplete={
         options.onBoardEffectComplete ?? vi.fn()
       }
@@ -147,7 +149,7 @@ describe('棋盘棋子层', () => {
     ).toBeInTheDocument()
   })
 
-  it('陨石效果播放完成后才通知结算', () => {
+  it('事件坠弹阶段持续 420ms 后才通知进入爆炸', () => {
     vi.useFakeTimers()
     const onBoardEffectComplete = vi.fn()
     const state = createInitialGameState()
@@ -158,13 +160,17 @@ describe('棋盘棋子层', () => {
         dispatch={vi.fn()}
         isDiceAnimating={false}
         onMoveStepComplete={vi.fn()}
-        boardEffect={{ id: 7, kind: 'meteor', tileIndex: 1 }}
+        boardEffect={{
+          id: 7,
+          kind: 'eventBombDrop',
+          tileIndex: 1,
+        }}
         onBoardEffectComplete={onBoardEffectComplete}
       />,
     )
 
     act(() => {
-      vi.advanceTimersByTime(949)
+      vi.advanceTimersByTime(419)
     })
     expect(onBoardEffectComplete).not.toHaveBeenCalled()
 
@@ -172,5 +178,93 @@ describe('棋盘棋子层', () => {
       vi.advanceTimersByTime(1)
     })
     expect(onBoardEffectComplete).toHaveBeenCalledWith(7)
+  })
+
+  it('道具炸弹只显示通用爆炸且持续 800ms', () => {
+    vi.useFakeTimers()
+    const onBoardEffectComplete = vi.fn()
+    const { container } = renderBoard(
+      createInitialGameState(),
+      {
+        boardEffect: {
+          id: 8,
+          kind: 'explosion',
+          source: 'trap',
+          tileIndex: 0,
+          playerId: 0,
+        },
+        onBoardEffectComplete,
+      },
+    )
+
+    expect(container.querySelector('.explosion-effect'))
+      .toBeInTheDocument()
+    expect(container.querySelector('.event-bomb-drop'))
+      .not.toBeInTheDocument()
+    expect(container.querySelectorAll('.explosion-effect__spark'))
+      .toHaveLength(10)
+
+    act(() => {
+      vi.advanceTimersByTime(799)
+    })
+    expect(onBoardEffectComplete).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(onBoardEffectComplete).toHaveBeenCalledWith(8)
+  })
+
+  it('蛛网捕获覆盖棋子并持续 850ms', () => {
+    vi.useFakeTimers()
+    const onBoardEffectComplete = vi.fn()
+    const { container } = renderBoard(
+      createInitialGameState(),
+      {
+        boardEffect: {
+          id: 9,
+          kind: 'webCapture',
+          tileIndex: 0,
+          playerId: 0,
+        },
+        onBoardEffectComplete,
+      },
+    )
+
+    expect(container.querySelector('.web-capture-effect'))
+      .toBeInTheDocument()
+    expect(container.querySelector('.pawn-motion--web-captured'))
+      .toBeInTheDocument()
+
+    act(() => {
+      vi.advanceTimersByTime(849)
+    })
+    expect(onBoardEffectComplete).not.toHaveBeenCalled()
+
+    act(() => {
+      vi.advanceTimersByTime(1)
+    })
+    expect(onBoardEffectComplete).toHaveBeenCalledWith(9)
+  })
+
+  it('同格炸弹和蛛网共用中心陷阱层', () => {
+    const initialState = createInitialGameState()
+    const state: GameState = {
+      ...initialState,
+      tileEffects: initialState.tileEffects.map((effect) =>
+        effect.tileIndex === 1
+          ? { ...effect, hasBomb: true, hasWeb: true }
+          : effect,
+      ),
+    }
+    const { container } = renderBoard(state)
+    const tile = container.querySelector('[data-tile-index="1"]')
+
+    expect(tile?.querySelector('.tile-trap-layer'))
+      .toBeInTheDocument()
+    expect(tile?.querySelector('.tile-trap--web'))
+      .toBeInTheDocument()
+    expect(tile?.querySelector('.tile-trap--bomb'))
+      .toBeInTheDocument()
   })
 })

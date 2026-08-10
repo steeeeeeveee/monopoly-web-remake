@@ -5,6 +5,7 @@ export type GameMode = 'local' | 'ai'
 export type GamePhase =
   | 'waitingForRoll'
   | 'moving'
+  | 'resolvingTileEffect'
   | 'awaitingDecision'
   | 'awaitingShop'
   | 'choosingRemoteDice'
@@ -88,6 +89,9 @@ export type GameAction =
     }
   | {
       type: 'MOVE_ONE_STEP'
+    }
+  | {
+      type: 'RESOLVE_TILE_EFFECTS'
     }
   | {
       type: 'BUY_PROPERTY'

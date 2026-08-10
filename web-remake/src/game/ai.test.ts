@@ -10,6 +10,26 @@ function createAITurnState(): GameState {
   }
 }
 
+function createAITurnWithoutItems(): GameState {
+  const state = createAITurnState()
+
+  return {
+    ...state,
+    players: state.players.map((player) =>
+      player.id === 1
+        ? {
+            ...player,
+            items: {
+              bomb: 0,
+              remote: 0,
+              web: 0,
+            },
+          }
+        : player,
+    ),
+  }
+}
+
 describe('电脑玩家', () => {
   it('会在自己的回合自动掷出合法骰子点数', () => {
     const action = getAIAction(
@@ -25,10 +45,13 @@ describe('电脑玩家', () => {
 
   it('普通骰子和遥控骰子都能使用 1–12', () => {
     expect(
-      getAIAction(createAITurnState(), () => 0),
+      getAIAction(createAITurnWithoutItems(), () => 0),
     ).toEqual({ type: 'ROLL', value: 1 })
     expect(
-      getAIAction(createAITurnState(), () => 0.999999),
+      getAIAction(
+        createAITurnWithoutItems(),
+        () => 0.999999,
+      ),
     ).toEqual({ type: 'ROLL', value: 12 })
 
     const remoteState: GameState = {
@@ -45,6 +68,15 @@ describe('电脑玩家', () => {
     const state: GameState = {
       ...createAITurnState(),
       phase: 'awaitingShop',
+    }
+
+    expect(getAIAction(state)).toBeNull()
+  })
+
+  it('陷阱动画结算期间不会继续执行操作', () => {
+    const state: GameState = {
+      ...createAITurnState(),
+      phase: 'resolvingTileEffect',
     }
 
     expect(getAIAction(state)).toBeNull()

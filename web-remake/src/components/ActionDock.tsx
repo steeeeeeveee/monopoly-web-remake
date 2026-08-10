@@ -42,6 +42,9 @@ export function ActionDock({
 
   const phaseMessage = (() => {
     if (state.phase === 'moving') return '棋子正在前进…'
+    if (state.phase === 'resolvingTileEffect') {
+      return '正在结算格子陷阱…'
+    }
     if (state.phase === 'placingItem') {
       return `请选择一个格子放置${
         state.placementItem === 'bomb' ? '炸弹' : '蛛网'
@@ -149,6 +152,12 @@ export function ActionDock({
           </button>
         )}
 
+        {state.phase === 'resolvingTileEffect' && (
+          <button className="primary-button" type="button" disabled>
+            陷阱触发中…
+          </button>
+        )}
+
         {!isAITurn && state.phase === 'placingItem' && (
           <button
             className="secondary-button"
@@ -161,13 +170,15 @@ export function ActionDock({
           </button>
         )}
 
-        {isAITurn && state.phase !== 'moving' && (
-          <div className="ai-thinking" aria-label="电脑思考中">
-            <i />
-            <i />
-            <i />
-          </div>
-        )}
+        {isAITurn &&
+          state.phase !== 'moving' &&
+          state.phase !== 'resolvingTileEffect' && (
+            <div className="ai-thinking" aria-label="电脑思考中">
+              <i />
+              <i />
+              <i />
+            </div>
+          )}
       </div>
 
       <ol className="activity-feed" aria-label="最近动态">

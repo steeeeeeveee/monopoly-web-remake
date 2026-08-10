@@ -17,7 +17,7 @@ interface MoneyDelta {
 }
 
 const MONEY_ROLL_DURATION_MS = 500
-const MONEY_DELTA_DURATION_MS = 800
+const MONEY_DELTA_DURATION_MS = 1200
 
 function prefersReducedMotion(): boolean {
   return (
