@@ -220,6 +220,10 @@ button:focus-visible,
   background: var(--blue);
 }
 
+.mode-card--multiplayer::before {
+  background: var(--gold);
+}
+
 .mode-card__visual {
   height: 54px;
   display: flex;
@@ -236,6 +240,18 @@ button:focus-visible,
 .mode-card__visual > :nth-child(2) {
   margin-left: -12px;
   transform: translateY(7px);
+}
+
+.mode-card__pawn-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 25px);
+  place-items: center;
+  gap: 0;
+}
+
+.mode-card__visual .mode-card__pawn-grid .pawn-icon {
+  width: 29px;
+  height: 29px;
 }
 
 .mode-card__copy {
@@ -464,6 +480,13 @@ button:focus-visible,
   align-items: start;
   justify-content: center;
   gap: clamp(14px, 2vw, 28px);
+}
+
+.player-rail {
+  min-width: 0;
+  display: grid;
+  align-content: start;
+  gap: 10px;
 }
 
 .board-column {
@@ -1977,6 +2000,10 @@ button:focus-visible,
 
   .game-layout {
     width: 100%;
+    gap: 5px;
+  }
+
+  .player-rail {
     gap: 5px;
   }
 

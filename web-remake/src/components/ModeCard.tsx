@@ -22,11 +22,22 @@ export function ModeCard({
       onClick={() => onSelect(mode)}
     >
       <span className="mode-card__visual" aria-hidden="true">
-        <PawnIcon color="#ef5f68" />
-        {mode === 'local' ? (
-          <PawnIcon color="#4b91e2" />
+        {mode === 'multiplayer' ? (
+          <span className="mode-card__pawn-grid">
+            <PawnIcon color="#ef5f68" />
+            <PawnIcon color="#5bc994" />
+            <PawnIcon color="#4b91e2" />
+            <PawnIcon color="#f6a94d" />
+          </span>
         ) : (
-          <GameIcon name="computer" />
+          <>
+            <PawnIcon color="#ef5f68" />
+            {mode === 'local' ? (
+              <PawnIcon color="#4b91e2" />
+            ) : (
+              <GameIcon name="computer" />
+            )}
+          </>
         )}
       </span>
 

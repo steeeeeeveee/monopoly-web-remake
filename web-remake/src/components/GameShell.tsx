@@ -52,15 +52,20 @@ export function GameShell({
   onBoardEffectComplete,
   gameSessionId,
 }: GameShellProps) {
-  const playerOne = state.players[0]
-  const playerTwo = state.players[1]
   const currentPlayer = state.players.find(
     (player) => player.id === state.currentPlayerId,
   )
 
-  if (!playerOne || !playerTwo || !currentPlayer) {
+  if (!currentPlayer) {
     return null
   }
+
+  const leftPlayers = state.players.filter(
+    (_, index) => index % 2 === 0,
+  )
+  const rightPlayers = state.players.filter(
+    (_, index) => index % 2 === 1,
+  )
 
   const currentProperty = state.properties.find(
     (property) =>
@@ -127,7 +132,9 @@ export function GameShell({
             <span>
               {state.mode === 'ai'
                 ? '单人挑战电脑'
-                : '双人同屏'}
+                : state.mode === 'multiplayer'
+                  ? '四人混战'
+                  : '双人同屏'}
             </span>
           </div>
         </div>
@@ -151,15 +158,20 @@ export function GameShell({
       </header>
 
       <div className="game-layout">
-        <PlayerCard
-          player={playerOne}
-          propertyCount={propertyCount(playerOne.id)}
-          isActive={
-            state.phase !== 'gameOver' &&
-            state.currentPlayerId === playerOne.id
-          }
-          moneyResetKey={gameSessionId}
-        />
+        <div className="player-rail player-rail--left">
+          {leftPlayers.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              propertyCount={propertyCount(player.id)}
+              isActive={
+                state.phase !== 'gameOver' &&
+                state.currentPlayerId === player.id
+              }
+              moneyResetKey={gameSessionId}
+            />
+          ))}
+        </div>
 
         <div className="board-column">
           <BoardView
@@ -183,15 +195,20 @@ export function GameShell({
           />
         </div>
 
-        <PlayerCard
-          player={playerTwo}
-          propertyCount={propertyCount(playerTwo.id)}
-          isActive={
-            state.phase !== 'gameOver' &&
-            state.currentPlayerId === playerTwo.id
-          }
-          moneyResetKey={gameSessionId}
-        />
+        <div className="player-rail player-rail--right">
+          {rightPlayers.map((player) => (
+            <PlayerCard
+              key={player.id}
+              player={player}
+              propertyCount={propertyCount(player.id)}
+              isActive={
+                state.phase !== 'gameOver' &&
+                state.currentPlayerId === player.id
+              }
+              moneyResetKey={gameSessionId}
+            />
+          ))}
+        </div>
       </div>
 
       <GameModal

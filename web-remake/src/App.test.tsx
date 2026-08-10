@@ -28,6 +28,31 @@ async function enterLocalGame(
 }
 
 describe('大富翁页面', () => {
+  it('可以进入两名真人加两名 AI 的四人混战', async () => {
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', {
+        name: '四人混战',
+      }),
+    )
+
+    expect(
+      await screen.findByRole('heading', {
+        name: 'AI 1',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        name: 'AI 2',
+      }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByText('¥ 5000')).toHaveLength(4)
+    expect(screen.getAllByText('电脑控制')).toHaveLength(2)
+  })
+
   it('可以选择单人模式并创建电脑玩家', async () => {
     const user = userEvent.setup()
 

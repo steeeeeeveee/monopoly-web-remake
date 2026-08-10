@@ -84,6 +84,12 @@ export function HomeScreen({ onStart }: HomeScreenProps) {
               description="与自动决策的电脑玩家展开一场较量"
               onSelect={selectMode}
             />
+            <ModeCard
+              mode="multiplayer"
+              title="四人混战"
+              description="两名真人与两名电脑同局，复刻原作多人模式"
+              onSelect={selectMode}
+            />
           </div>
         </div>
 

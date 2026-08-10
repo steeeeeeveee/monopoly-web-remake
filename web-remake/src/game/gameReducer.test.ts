@@ -30,6 +30,29 @@ function rollAndFinish(
   return finishMovement(rollingState)
 }
 
+describe('四人混战', () => {
+  it('创建两名真人和两名 AI，并按四人顺序轮转', () => {
+    let state = createInitialGameState('multiplayer')
+
+    expect(
+      state.players.map((player) => ({
+        name: player.name,
+        isAI: player.isAI,
+      })),
+    ).toEqual([
+      { name: '玩家 1', isAI: false },
+      { name: '玩家 2', isAI: false },
+      { name: 'AI 1', isAI: true },
+      { name: 'AI 2', isAI: true },
+    ])
+
+    for (const expectedPlayerId of [1, 2, 3, 0]) {
+      state = rollAndFinish(state, 3)
+      expect(state.currentPlayerId).toBe(expectedPlayerId)
+    }
+  })
+})
+
 describe('地产经济', () => {
   it('购买后扣除 1000 金币，并把地产设为 1 级', () => {
     let state = createInitialGameState()

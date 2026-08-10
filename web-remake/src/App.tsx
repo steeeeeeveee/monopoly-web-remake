@@ -169,9 +169,9 @@ function App() {
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement ||
         event.target instanceof HTMLSelectElement
-      const isAITurn =
-        gameState.mode === 'ai' &&
-        gameState.currentPlayerId === 1
+      const isAITurn = gameState.players.find(
+        (player) => player.id === gameState.currentPlayerId,
+      )?.isAI ?? false
 
       if (
         !gameStarted ||

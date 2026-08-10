@@ -1,6 +1,6 @@
-export type PlayerId = 0 | 1
+export type PlayerId = 0 | 1 | 2 | 3
 
-export type GameMode = 'local' | 'ai'
+export type GameMode = 'local' | 'ai' | 'multiplayer'
 
 export type GamePhase =
   | 'waitingForRoll'

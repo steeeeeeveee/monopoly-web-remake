@@ -135,11 +135,11 @@ export function getAIAction(
   }
 
   if (state.phase === 'awaitingEventTarget') {
+    const targets = state.players.filter(
+      (candidate) => !candidate.bankrupt,
+    )
     const target =
-      state.players.find(
-        (candidate) =>
-          !candidate.bankrupt && !candidate.isAI,
-      ) ?? player
+      targets[chooseIndex(targets.length, random)] ?? player
 
     return createRandomEventAction(
       state,

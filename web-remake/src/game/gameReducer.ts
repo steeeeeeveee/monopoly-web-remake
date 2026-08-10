@@ -108,44 +108,50 @@ export function getPropertyTotalCost(level: number): number {
   return totalCost
 }
 
+function createPlayer(
+  id: PlayerId,
+  name: string,
+  color: string,
+  isAI: boolean,
+): Player {
+  return {
+    id,
+    name,
+    color,
+    money: STARTING_MONEY,
+    position: 0,
+    bankrupt: false,
+    inJail: false,
+    jailTurnsLeft: 0,
+    items: {
+      bomb: 10,
+      remote: 10,
+      web: 10,
+    },
+    confusedTurns: 0,
+    hasForcedAcquisition: false,
+    isAI,
+  }
+}
+
 function createPlayers(mode: GameMode): Player[] {
+  if (mode === 'multiplayer') {
+    return [
+      createPlayer(0, '玩家 1', '#ff6b6b', false),
+      createPlayer(1, '玩家 2', '#5bc994', false),
+      createPlayer(2, 'AI 1', '#4dabf7', true),
+      createPlayer(3, 'AI 2', '#f6a94d', true),
+    ]
+  }
+
   return [
-    {
-      id: 0,
-      name: '玩家 1',
-      color: '#ff6b6b',
-      money: STARTING_MONEY,
-      position: 0,
-      bankrupt: false,
-      inJail: false,
-      jailTurnsLeft: 0,
-      items: {
-        bomb: 10,
-        remote: 10,
-        web: 10,
-      },
-      confusedTurns: 0,
-      hasForcedAcquisition: false,
-      isAI: false,
-    },
-    {
-      id: 1,
-      name: mode === 'ai' ? '电脑玩家' : '玩家 2',
-      color: '#4dabf7',
-      money: STARTING_MONEY,
-      position: 0,
-      bankrupt: false,
-      inJail: false,
-      jailTurnsLeft: 0,
-      items: {
-        bomb: 10,
-        remote: 10,
-        web: 10,
-      },
-      confusedTurns: 0,
-      hasForcedAcquisition: false,
-      isAI: mode === 'ai',
-    },
+    createPlayer(0, '玩家 1', '#ff6b6b', false),
+    createPlayer(
+      1,
+      mode === 'ai' ? '电脑玩家' : '玩家 2',
+      '#4dabf7',
+      mode === 'ai',
+    ),
   ]
 }
 
@@ -187,8 +193,17 @@ export function createInitialGameState(
   }
 }
 
-function getNextPlayerId(currentPlayerId: PlayerId): PlayerId {
-  return currentPlayerId === 0 ? 1 : 0
+function getNextPlayerId(
+  players: Player[],
+  currentPlayerId: PlayerId,
+): PlayerId {
+  const currentIndex = players.findIndex(
+    (player) => player.id === currentPlayerId,
+  )
+  const nextPlayer =
+    players[(currentIndex + 1) % players.length]
+
+  return nextPlayer?.id ?? currentPlayerId
 }
 
 function addLog(log: string[], message: string): string[] {
@@ -203,6 +218,7 @@ function finishTurn(state: GameState): GameState {
   let players = state.players
   let log = state.log
   let nextPlayerId = getNextPlayerId(
+    players,
     state.currentPlayerId,
   )
 
@@ -216,7 +232,7 @@ function finishTurn(state: GameState): GameState {
     )
 
     if (!nextPlayer || nextPlayer.bankrupt) {
-      nextPlayerId = getNextPlayerId(nextPlayerId)
+      nextPlayerId = getNextPlayerId(players, nextPlayerId)
       continue
     }
 
@@ -250,7 +266,7 @@ function finishTurn(state: GameState): GameState {
           : `${nextPlayer.name} 在监狱中跳过本回合，现已出狱`,
     )
 
-    nextPlayerId = getNextPlayerId(nextPlayerId)
+    nextPlayerId = getNextPlayerId(players, nextPlayerId)
   }
 
   return {
