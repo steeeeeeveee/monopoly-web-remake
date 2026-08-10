@@ -211,6 +211,14 @@ describe('大富翁页面', () => {
       screen.getByRole('button', { name: '掷骰子' }),
     )
 
+    const dice = screen.getByLabelText('骰子点数 2')
+    expect(
+      dice.querySelector('[data-dice-layer="final"]'),
+    ).toHaveClass('dice-view__final-face--preloaded')
+    expect(
+      dice.querySelector('[data-dice-layer="rolling"]'),
+    ).toBeInTheDocument()
+
     act(() => {
       vi.advanceTimersByTime(899)
     })
@@ -219,6 +227,12 @@ describe('大富翁页面', () => {
     act(() => {
       vi.advanceTimersByTime(1)
     })
+    expect(
+      dice.querySelector('[data-dice-layer="final"]'),
+    ).not.toHaveClass('dice-view__final-face--preloaded')
+    expect(
+      dice.querySelector('[data-dice-layer="rolling"]'),
+    ).not.toBeInTheDocument()
     act(() => {
       vi.advanceTimersByTime(279)
     })

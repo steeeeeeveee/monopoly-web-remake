@@ -63,11 +63,12 @@ export function DiceView({
     }
   }, [isRolling, onAnimationComplete, value])
 
-  const imageSource = showRollingFrame
+  const finalImageSource = value
+    ? getDiceFaceSource(value)
+    : null
+  const rollingImageSource = showRollingFrame
     ? rollingDiceFrames[rollingFrame]
-    : value
-      ? getDiceFaceSource(value)
-      : null
+    : null
 
   return (
     <div
@@ -76,9 +77,29 @@ export function DiceView({
       } ${className}`}
       aria-label={`骰子点数 ${value ?? '尚未投掷'}`}
     >
-      {imageSource ? (
-        <img src={imageSource} alt="" aria-hidden="true" />
-      ) : (
+      {finalImageSource && (
+        <img
+          className={`dice-view__final-face ${
+            showRollingFrame
+              ? 'dice-view__final-face--preloaded'
+              : ''
+          }`}
+          data-dice-layer="final"
+          src={finalImageSource}
+          alt=""
+          aria-hidden="true"
+        />
+      )}
+      {rollingImageSource && (
+        <img
+          className="dice-view__rolling-frame"
+          data-dice-layer="rolling"
+          src={rollingImageSource}
+          alt=""
+          aria-hidden="true"
+        />
+      )}
+      {!finalImageSource && !rollingImageSource && (
         <span aria-hidden="true">?</span>
       )}
     </div>
