@@ -16,23 +16,25 @@ export type HouseTier =
   | 'medium'
   | 'villa'
 
+const publicAsset = (path: string) => `${import.meta.env.BASE_URL}${path}`
+
 export const functionalIconSources = {
-  shop: '/game-assets/functional/shop.png',
-  event: '/game-assets/functional/event.png',
-  jail: '/game-assets/functional/jail.png',
-  hospital: '/game-assets/functional/hospital.png',
+  shop: publicAsset('game-assets/functional/shop.png'),
+  event: publicAsset('game-assets/functional/event.png'),
+  jail: publicAsset('game-assets/functional/jail.png'),
+  hospital: publicAsset('game-assets/functional/hospital.png'),
 } as const
 
 export const rollingDiceFrames = Array.from(
   { length: 6 },
   (_, index) =>
-    `/game-assets/dice/rolling/rolling-${index + 1}.png`,
+    publicAsset(`game-assets/dice/rolling/rolling-${index + 1}.png`),
 )
 
 export function getDiceFaceSource(value: number): string {
   const safeValue = Math.min(12, Math.max(1, value))
 
-  return `/game-assets/dice/${safeValue}${safeValue}.png`
+  return publicAsset(`game-assets/dice/${safeValue}${safeValue}.png`)
 }
 
 export function getHouseTier(level: number): HouseTier | null {

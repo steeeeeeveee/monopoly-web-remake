@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vinext dev",
     "build": "vinext build",
+    "build:pages": "vite build --config vite.pages.config.ts",
     "start": "vinext start",
     "lint": "oxlint",
     "test": "vitest run",
-    "preview": "vinext start"
+    "preview": "vinext start",
+    "preview:pages": "vite preview --config vite.pages.config.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
